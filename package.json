@@ -1,0 +1,37 @@
+{
+  "name": "ybit-certificate-verification",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check:client-bundle": "node scripts/check-client-bundle.mjs",
+    "check:forbidden-features": "node scripts/check-forbidden-features.mjs"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "next": "16.3.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.16.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "eslint": "^9.32.0",
+    "eslint-config-next": "16.3.1",
+    "jsdom": "^26.1.0",
+    "qrcode": "^1.5.4",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

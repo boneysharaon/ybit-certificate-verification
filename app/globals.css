@@ -1,0 +1,1223 @@
+:root {
+  --background: #ffffff;
+  --surface: #ffffff;
+  --surface-muted: #f6f8f7;
+  --ink: #1d2b2a;
+  --ink-muted: #586866;
+  --border: #d8e1de;
+  --accent: #0f5b4f;
+  --accent-deep: #093e36;
+  --accent-soft: #e7f2ef;
+  --gold: #b58a35;
+  --danger: #a63434;
+  --danger-soft: #faeeee;
+  --focus: #0d7c70;
+  --shadow: 0 20px 50px rgba(15, 91, 79, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+  color: var(--ink);
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.site-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 56px;
+}
+
+.institutional-header {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 22px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-top: 5px solid var(--accent);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.logo-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.logo-slot-left {
+  justify-content: flex-start;
+}
+
+.logo-slot-right {
+  justify-content: flex-end;
+}
+
+.institution-logo {
+  display: block;
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+}
+
+.logo-placeholder {
+  display: grid;
+  width: 78px;
+  height: 78px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-muted);
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.institutional-copy {
+  min-width: 0;
+  text-align: center;
+}
+
+.institutional-copy p {
+  margin: 0;
+}
+
+.society-name,
+.dte-code,
+.affiliation {
+  color: var(--ink-muted);
+  font-size: 0.98rem;
+}
+
+.society-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.08rem;
+}
+
+.institute-name {
+  margin-top: 6px;
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.66rem;
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.dte-code {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.affiliation {
+  margin-top: 2px;
+}
+
+.verification-intro {
+  padding: 44px 0 24px;
+  text-align: center;
+}
+
+.section-kicker {
+  margin: 0 0 8px;
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.verification-intro h1 {
+  margin: 0;
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.2rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.verification-intro p:last-child {
+  max-width: 660px;
+  margin: 12px auto 0;
+  color: var(--ink-muted);
+  font-size: 1.05rem;
+}
+
+.verification-workspace {
+  display: grid;
+  gap: 28px;
+}
+
+.certificate-directory {
+  display: grid;
+  gap: 14px;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.certificate-directory-link {
+  display: grid;
+  gap: 6px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--accent-deep);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+}
+
+.certificate-directory-link:hover {
+  border-left-color: var(--gold);
+  background: var(--accent-soft);
+}
+
+.certificate-directory-link span {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.18rem;
+  font-weight: 700;
+}
+
+.certificate-directory-link small {
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--accent-deep);
+  text-decoration: underline;
+}
+
+.verification-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+}
+
+.field-group label {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.field-group input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid #b9c8c4;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.field-group input::placeholder {
+  color: #74817f;
+}
+
+.prefixed-id-field {
+  display: grid;
+  grid-template-columns: auto minmax(92px, 1fr);
+  width: 100%;
+}
+
+.id-prefix {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid #b9c8c4;
+  border-right: 0;
+  border-radius: 4px 0 0 4px;
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.prefixed-id-field input {
+  border-radius: 0 4px 4px 0;
+}
+
+.field-help {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.verify-button {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 1px solid var(--accent-deep);
+  border-radius: 4px;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.verify-button:hover:not(:disabled) {
+  background: var(--accent-deep);
+}
+
+.verify-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.form-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.form-message-error {
+  color: var(--danger);
+}
+
+.form-message-neutral {
+  color: var(--ink-muted);
+}
+
+.certificate-output {
+  display: grid;
+  gap: 14px;
+  max-width: 920px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.certificate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.secondary-action-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--accent-deep);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-action-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.secondary-action-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.verification-document,
+.result-panel {
+  max-width: 920px;
+  width: 100%;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.verification-document {
+  padding: 36px;
+}
+
+.verification-document .institutional-header {
+  grid-template-columns: 78px minmax(0, 1fr) 78px;
+  gap: 14px;
+  padding: 18px 20px;
+  box-shadow: none;
+}
+
+.verification-document .institution-logo,
+.verification-document .logo-placeholder {
+  width: 70px;
+  height: 70px;
+}
+
+.verification-document .society-name {
+  font-size: 0.94rem;
+}
+
+.verification-document .institute-name {
+  font-size: 1.14rem;
+  white-space: nowrap;
+}
+
+.verification-document .dte-code,
+.verification-document .affiliation {
+  font-size: 0.84rem;
+}
+
+.document-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.document-status span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.document-status h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: 0;
+}
+
+.document-status-valid h2 {
+  color: var(--accent-deep);
+}
+
+.document-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 28px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+
+.document-meta-grid div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.document-meta-grid span {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.document-meta-grid strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.letter-body {
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.12rem;
+}
+
+.letter-title,
+.concern-line {
+  text-align: center;
+  font-weight: 700;
+}
+
+.letter-title {
+  margin: 0;
+  color: var(--accent-deep);
+  font-size: 1.55rem;
+}
+
+.concern-line {
+  margin: 10px 0 24px;
+  font-size: 1.03rem;
+}
+
+.letter-body p {
+  margin: 0 0 18px;
+}
+
+.authenticity-panel {
+  margin-top: 28px;
+  padding: 18px;
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.certificate-verification-qr {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  margin-top: 24px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.qr-frame {
+  display: grid;
+  width: 138px;
+  height: 138px;
+  place-items: center;
+  padding: 7px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.qr-code-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.qr-instructions {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.qr-instructions strong {
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.08rem;
+}
+
+.qr-instructions ol {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ink);
+}
+
+.qr-instructions li {
+  margin: 2px 0;
+}
+
+.signatory-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  margin-top: 42px;
+}
+
+.signatory {
+  display: grid;
+  gap: 4px;
+  min-height: 166px;
+  align-content: end;
+  color: var(--ink);
+}
+
+.signatory-right {
+  text-align: right;
+}
+
+.signature-image {
+  display: block;
+  width: min(280px, 100%);
+  height: 118px;
+  object-fit: contain;
+  object-position: left bottom;
+  opacity: 0.94;
+  filter: saturate(0.92) contrast(1.04);
+  mix-blend-mode: multiply;
+}
+
+.signatory-right .signature-image {
+  margin-left: auto;
+  object-position: right bottom;
+}
+
+.signatory strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.02rem;
+}
+
+.signatory span {
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+}
+
+.verification-footnote {
+  margin: 30px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.result-panel {
+  padding: 26px;
+}
+
+.result-panel h2 {
+  margin: 0 0 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  letter-spacing: 0;
+}
+
+.result-panel p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.result-panel-revoked {
+  border-color: #e0bcbc;
+  background: var(--danger-soft);
+}
+
+.result-panel-revoked h2 {
+  color: var(--danger);
+}
+
+.result-panel-not-found h2 {
+  color: var(--accent-deep);
+}
+
+@media (min-width: 900px) {
+  .institute-name {
+    white-space: nowrap;
+  }
+
+  .verification-document .institute-name {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 820px) {
+  .site-shell {
+    width: min(100% - 24px, 720px);
+    padding-top: 16px;
+  }
+
+  .institutional-header {
+    grid-template-columns: 74px minmax(0, 1fr) 74px;
+    gap: 12px;
+    padding: 18px 14px;
+  }
+
+  .institution-logo,
+  .logo-placeholder {
+    width: 62px;
+    height: 62px;
+  }
+
+  .society-name {
+    font-size: 0.95rem;
+  }
+
+  .institute-name {
+    font-size: 1.24rem;
+  }
+
+  .dte-code,
+  .affiliation {
+    font-size: 0.86rem;
+  }
+
+  .verification-intro {
+    padding-top: 34px;
+  }
+
+  .verification-intro h1 {
+    font-size: 1.8rem;
+  }
+
+  .verification-form {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .verify-button {
+    width: 100%;
+  }
+
+  .document-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .certificate-actions {
+    justify-content: stretch;
+  }
+
+  .secondary-action-button {
+    flex: 1 1 180px;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-shell {
+    width: calc(100% - 20px);
+  }
+
+  .institutional-header {
+    grid-template-columns: 1fr;
+  }
+
+  .logo-slot-left,
+  .logo-slot-right {
+    justify-content: center;
+  }
+
+  .logo-slot-right {
+    display: none;
+  }
+
+  .institute-name {
+    font-size: 1.08rem;
+  }
+
+  .verification-document {
+    padding: 22px 16px;
+  }
+
+  .prefixed-id-field {
+    grid-template-columns: 1fr;
+  }
+
+  .id-prefix {
+    border-right: 1px solid #b9c8c4;
+    border-bottom: 0;
+    border-radius: 4px 4px 0 0;
+    white-space: normal;
+  }
+
+  .prefixed-id-field input {
+    border-radius: 0 0 4px 4px;
+  }
+
+  .document-meta-grid,
+  .signatory-row,
+  .certificate-verification-qr {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-frame {
+    width: 126px;
+    height: 126px;
+  }
+
+  .signatory-right {
+    text-align: left;
+  }
+
+  .signatory-right .signature-image {
+    margin-left: 0;
+    object-position: left bottom;
+  }
+
+  .letter-body {
+    font-size: 1.02rem;
+  }
+}
+
+.admin-intro {
+  padding-bottom: 18px;
+}
+
+.admin-state-panel,
+.admin-workspace {
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.admin-state-panel {
+  padding: 24px;
+  text-align: center;
+}
+
+.admin-state-panel h2 {
+  margin: 0 0 10px;
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.admin-state-panel p {
+  max-width: 720px;
+  margin: 0 auto 18px;
+  color: var(--ink-muted);
+}
+
+.admin-sign-in-link {
+  display: inline-flex;
+  width: auto;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.admin-workspace {
+  display: grid;
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+
+.admin-toolbar strong {
+  color: var(--accent-deep);
+}
+
+.admin-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-eyebrow {
+  margin: 0 0 2px;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 620px;
+}
+
+.admin-event-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px;
+  border-right: 1px solid var(--border);
+  background: #fbfcfc;
+}
+
+.admin-event-button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-event-button span {
+  font-weight: 700;
+}
+
+.admin-event-button small {
+  color: var(--ink-muted);
+}
+
+.admin-event-button-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.admin-editor {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.admin-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-editor-heading h1 {
+  margin: 0;
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.admin-grid label span {
+  font-size: 0.9rem;
+}
+
+.admin-grid input,
+.admin-grid select,
+.admin-grid textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.admin-grid input,
+.admin-grid select {
+  min-height: 44px;
+  padding: 9px 11px;
+}
+
+.admin-grid textarea {
+  min-height: 120px;
+  padding: 11px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.admin-field-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .admin-toolbar,
+  .admin-editor-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-event-list {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+body.pdf-export-mode {
+  background: #ffffff;
+}
+
+body.pdf-export-mode .online-only,
+body.pdf-export-mode .certificate-actions {
+  display: none !important;
+}
+
+body.pdf-export-mode .verification-document {
+  width: 794px;
+  max-width: none;
+  min-height: 1123px;
+  margin: 0;
+  padding: 34px 42px;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+body.pdf-export-mode .verification-document .institutional-header {
+  grid-template-columns: 76px minmax(0, 1fr) 76px;
+  gap: 14px;
+  padding: 16px 18px;
+  border-top-width: 4px;
+}
+
+body.pdf-export-mode .verification-document .institution-logo,
+body.pdf-export-mode .verification-document .logo-placeholder {
+  width: 66px;
+  height: 66px;
+}
+
+body.pdf-export-mode .verification-document .society-name {
+  font-size: 13px;
+}
+
+body.pdf-export-mode .verification-document .institute-name {
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+body.pdf-export-mode .verification-document .dte-code,
+body.pdf-export-mode .verification-document .affiliation {
+  font-size: 12px;
+}
+
+body.pdf-export-mode .document-meta-grid {
+  margin: 18px 0 22px;
+  padding: 14px;
+}
+
+body.pdf-export-mode .letter-body {
+  font-size: 17px;
+  line-height: 1.42;
+}
+
+body.pdf-export-mode .letter-body p {
+  margin-bottom: 14px;
+}
+
+body.pdf-export-mode .certificate-verification-qr {
+  margin-top: 18px;
+  padding: 12px 0;
+}
+
+body.pdf-export-mode .qr-frame {
+  width: 116px;
+  height: 116px;
+}
+
+body.pdf-export-mode .signatory-row {
+  margin-top: 26px;
+}
+
+body.pdf-export-mode .signatory {
+  min-height: 132px;
+}
+
+body.pdf-export-mode .signature-image {
+  width: min(240px, 100%);
+  height: 98px;
+}
+
+body.pdf-export-mode .verification-footnote {
+  margin-top: 22px;
+  padding-top: 14px;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 210mm;
+    min-width: 0;
+    background: #ffffff;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .certificate-output,
+  .certificate-output * {
+    visibility: visible !important;
+  }
+
+  .certificate-output {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 210mm;
+    max-width: none;
+    margin: 0;
+  }
+
+  .no-print,
+  .no-print *,
+  .online-only,
+  .online-only * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .verification-document {
+    width: 210mm;
+    max-width: none;
+    min-height: 297mm;
+    margin: 0;
+    padding: 7mm 8mm;
+    border: 0;
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  .verification-document .institutional-header {
+    grid-template-columns: 20mm minmax(0, 1fr) 20mm;
+    gap: 4mm;
+    padding: 4mm 5mm;
+    border-top-width: 1.2mm;
+    box-shadow: none;
+  }
+
+  .verification-document .institution-logo,
+  .verification-document .logo-placeholder {
+    width: 17mm;
+    height: 17mm;
+  }
+
+  .verification-document .society-name {
+    font-size: 9pt;
+  }
+
+  .verification-document .institute-name {
+    font-size: 12pt;
+    white-space: nowrap;
+  }
+
+  .verification-document .dte-code,
+  .verification-document .affiliation {
+    font-size: 8.4pt;
+  }
+
+  .document-meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3mm;
+    margin: 6mm 0;
+    padding: 4mm;
+  }
+
+  .document-meta-grid span {
+    font-size: 7.3pt;
+  }
+
+  .document-meta-grid strong {
+    font-size: 9.2pt;
+  }
+
+  .letter-title {
+    font-size: 16pt;
+  }
+
+  .concern-line {
+    margin-bottom: 5mm;
+    font-size: 10.5pt;
+  }
+
+  .letter-body {
+    font-size: 11pt;
+    line-height: 1.38;
+  }
+
+  .letter-body p {
+    margin-bottom: 4mm;
+  }
+
+  .certificate-verification-qr {
+    grid-template-columns: 25mm minmax(0, 1fr);
+    gap: 5mm;
+    margin-top: 5mm;
+    padding: 3.5mm 0;
+  }
+
+  .qr-frame {
+    width: 25mm;
+    height: 25mm;
+    padding: 1.2mm;
+  }
+
+  .qr-instructions strong {
+    font-size: 10.5pt;
+  }
+
+  .qr-instructions ol {
+    padding-left: 5mm;
+    font-size: 9pt;
+  }
+
+  .signatory-row {
+    gap: 10mm;
+    margin-top: 6mm;
+  }
+
+  .signatory {
+    min-height: 31mm;
+  }
+
+  .signature-image {
+    width: 55mm;
+    height: 22mm;
+  }
+
+  .signatory strong {
+    font-size: 10pt;
+  }
+
+  .signatory span,
+  .verification-footnote {
+    font-size: 8.5pt;
+  }
+
+  .verification-footnote {
+    margin-top: 5mm;
+    padding-top: 3.5mm;
+  }
+}

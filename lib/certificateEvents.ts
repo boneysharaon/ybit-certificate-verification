@@ -50,7 +50,13 @@ export const EVENTS_SHEET_HEADERS = [
   "QR Instructions",
   "Status",
   "Verify Button Label",
+  "Signatory 1 Signature Image",
+  "Signatory 2 Signature Image",
 ] as const;
+
+const MAX_SIGNATURE_DATA_URL_LENGTH = 48_000;
+const SIGNATURE_DATA_URL_PATTERN =
+  /^data:image\/(?:png|jpeg|jpg|webp);base64,[a-z0-9+/=\s]+$/i;
 
 const DEFAULT_LETTER_BODY = [
   "This is to place on record our sincere appreciation for {{studentName}}, a student of {{className}}, for volunteering during the {{eventName}} held at Yashwantrao Bhonsale Institute of Technology, Sawantwadi, on {{eventDate}}.",
@@ -181,6 +187,40 @@ function getValue(
   return index >= 0 ? row[index] : "";
 }
 
+function isAllowedSignatureSource(value: string) {
+  return (
+    value.startsWith("/") ||
+    (value.length <= MAX_SIGNATURE_DATA_URL_LENGTH &&
+      SIGNATURE_DATA_URL_PATTERN.test(value))
+  );
+}
+
+function parseSignatureSource(value: unknown, fallback: string) {
+  const signatureSrc = normaliseCell(value);
+
+  if (!signatureSrc) {
+    return fallback;
+  }
+
+  return isAllowedSignatureSource(signatureSrc) ? signatureSrc : fallback;
+}
+
+function normaliseSignatureSource(value: unknown, fallback: string) {
+  const signatureSrc = normaliseCell(value);
+
+  if (!signatureSrc) {
+    return fallback;
+  }
+
+  if (!isAllowedSignatureSource(signatureSrc)) {
+    throw new Error(
+      "Signature image must be a PNG, JPEG or WebP data image under 48 KB after compression.",
+    );
+  }
+
+  return signatureSrc;
+}
+
 export function slugifyEventName(value: string) {
   return value
     .trim()
@@ -212,6 +252,8 @@ export function eventToSheetRow(event: CertificateEvent) {
     event.qrInstructions.join("\n"),
     event.status,
     event.verifyButtonLabel,
+    event.signatories[0].signatureSrc,
+    event.signatories[1].signatureSrc,
   ];
 }
 
@@ -260,6 +302,14 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
   const signatoryTwoDesignation =
     normaliseCell(getValue(headers, row, "Signatory 2 Designation")) ||
     DEFAULT_SIGNATORIES[1].designation;
+  const signatoryOneSignatureSrc = parseSignatureSource(
+    getValue(headers, row, "Signatory 1 Signature Image"),
+    DEFAULT_SIGNATORIES[0].signatureSrc,
+  );
+  const signatoryTwoSignatureSrc = parseSignatureSource(
+    getValue(headers, row, "Signatory 2 Signature Image"),
+    DEFAULT_SIGNATORIES[1].signatureSrc,
+  );
 
   return {
     slug,
@@ -290,11 +340,15 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
         ...DEFAULT_SIGNATORIES[0],
         name: signatoryOneName,
         designation: signatoryOneDesignation,
+        signatureSrc: signatoryOneSignatureSrc,
+        signatureAlt: `Signature of ${signatoryOneName}`,
       },
       {
         ...DEFAULT_SIGNATORIES[1],
         name: signatoryTwoName,
         designation: signatoryTwoDesignation,
+        signatureSrc: signatoryTwoSignatureSrc,
+        signatureAlt: `Signature of ${signatoryTwoName}`,
       },
     ],
     status: parseStatus(getValue(headers, row, "Status")),
@@ -349,6 +403,18 @@ export function normaliseCertificateEvent(input: unknown): CertificateEvent {
         signatory.designation.trim()
           ? signatory.designation.trim()
           : defaultSignatory.designation,
+      signatureSrc: normaliseSignatureSource(
+        signatory.signatureSrc,
+        defaultSignatory.signatureSrc,
+      ),
+      signatureAlt:
+        typeof signatory.signatureAlt === "string" && signatory.signatureAlt.trim()
+          ? signatory.signatureAlt.trim()
+          : `Signature of ${
+              typeof signatory.name === "string" && signatory.name.trim()
+                ? signatory.name.trim()
+                : defaultSignatory.name
+            }`,
     };
   }) as [CertificateSignatory, CertificateSignatory];
 

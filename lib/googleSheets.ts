@@ -48,6 +48,11 @@ type SheetValuesResponse = {
 type SpreadsheetMetadataResponse = {
   sheets?: Array<{
     properties?: {
+      gridProperties?: {
+        columnCount?: number;
+        frozenRowCount?: number;
+        rowCount?: number;
+      };
       sheetId?: number;
       title?: string;
     };
@@ -157,6 +162,23 @@ function quoteSheetName(sheetName: string) {
 function sheetRange(sheetName: string, range: string) {
   return `${quoteSheetName(sheetName)}!${range}`;
 }
+
+function spreadsheetColumnName(columnNumber: number) {
+  let columnName = "";
+  let current = columnNumber;
+
+  while (current > 0) {
+    const remainder = (current - 1) % 26;
+    columnName = String.fromCharCode(65 + remainder) + columnName;
+    current = Math.floor((current - 1) / 26);
+  }
+
+  return columnName;
+}
+
+const EVENTS_SHEET_LAST_COLUMN = spreadsheetColumnName(
+  EVENTS_SHEET_HEADERS.length,
+);
 
 function spreadsheetUrl(config: SheetsConfig, path = "") {
   return `${GOOGLE_SHEETS_API_URL}/${encodeURIComponent(
@@ -381,7 +403,28 @@ export async function ensureEventsSheet() {
     throw new SheetsRequestError("Could not create the Events sheet.");
   }
 
-  await writeValues(EVENTS_SHEET_NAME, `A1:T1`, [[...EVENTS_SHEET_HEADERS]]);
+  if (
+    (eventsSheet.gridProperties?.columnCount ?? 0) <
+    EVENTS_SHEET_HEADERS.length
+  ) {
+    await batchUpdate([
+      {
+        updateSheetProperties: {
+          properties: {
+            sheetId: eventsSheet.sheetId,
+            gridProperties: {
+              columnCount: EVENTS_SHEET_HEADERS.length,
+            },
+          },
+          fields: "gridProperties.columnCount",
+        },
+      },
+    ]);
+  }
+
+  await writeValues(EVENTS_SHEET_NAME, `A1:${EVENTS_SHEET_LAST_COLUMN}1`, [
+    [...EVENTS_SHEET_HEADERS],
+  ]);
   await formatEventsSheet(eventsSheet.sheetId);
 
   return eventsSheet.sheetId;
@@ -481,7 +524,7 @@ export async function getCertificateEvents({
   fallbackToStatic = true,
 }: EventListOptions = {}) {
   try {
-    const rows = await readValues(EVENTS_SHEET_NAME, "A:T");
+    const rows = await readValues(EVENTS_SHEET_NAME, `A:${EVENTS_SHEET_LAST_COLUMN}`);
     const events = parseEventsRows(rows).filter(
       (event) => includeDraft || event.status === "Published",
     );
@@ -517,7 +560,7 @@ export async function upsertCertificateEvent(input: unknown) {
   const event = normaliseCertificateEvent(input);
   await ensureEventsSheet();
 
-  const rows = await readValues(EVENTS_SHEET_NAME, "A:T");
+  const rows = await readValues(EVENTS_SHEET_NAME, `A:${EVENTS_SHEET_LAST_COLUMN}`);
   const headers = rows[0] ?? [...EVENTS_SHEET_HEADERS];
   const slugIndex = getHeadingIndex(headers, "slug");
   const existingRowIndex =
@@ -527,9 +570,11 @@ export async function upsertCertificateEvent(input: unknown) {
   const targetRowNumber =
     existingRowIndex >= 0 ? existingRowIndex + 1 : Math.max(rows.length + 1, 2);
 
-  await writeValues(EVENTS_SHEET_NAME, `A${targetRowNumber}:T${targetRowNumber}`, [
-    eventToSheetRow(event),
-  ]);
+  await writeValues(
+    EVENTS_SHEET_NAME,
+    `A${targetRowNumber}:${EVENTS_SHEET_LAST_COLUMN}${targetRowNumber}`,
+    [eventToSheetRow(event)],
+  );
 
   return event;
 }

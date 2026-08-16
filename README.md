@@ -70,6 +70,8 @@ The `Events` tab has these columns:
 | R | QR Instructions |
 | S | Status |
 | T | Verify Button Label |
+| U | Signatory 1 Signature Image |
+| V | Signatory 2 Signature Image |
 
 Only rows with `Status` set to `Published` appear on the public homepage. `Draft` and `Archived` rows stay hidden.
 
@@ -152,6 +154,8 @@ https://ybit-certificate-verification.vercel.app/admin
 ```
 
 Admin access uses Google sign-in. Only emails listed in `ADMIN_EMAILS` are allowed.
+
+The editor can upload a custom signature image for each signatory. Uploads are processed in the browser before saving: the image is cropped to the signature ink, light paper background is made transparent, and the result is compressed before being stored in the `Events` tab. The public certificate renders the cleaned signature with transparent/multiply styling so it does not look like a pasted photo.
 
 Create a Google OAuth web client in the same Google Cloud project and add this authorized redirect URI:
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import { type ChangeEvent, useMemo, useState } from "react";
 import {
   getDefaultCertificateEvent,
   slugifyEventName,
@@ -13,6 +14,11 @@ type AdminEventsEditorProps = {
 };
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+
+const MAX_SIGNATURE_FILE_BYTES = 6 * 1024 * 1024;
+const MAX_SIGNATURE_DATA_URL_LENGTH = 45_000;
+const SIGNATURE_OUTPUT_WIDTH = 520;
+const SIGNATURE_OUTPUT_HEIGHT = 190;
 
 function cloneEvent(event: CertificateEvent): CertificateEvent {
   return {
@@ -57,6 +63,195 @@ function splitLines(value: string) {
     .filter(Boolean);
 }
 
+function loadImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not read the selected image."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function get2dContext(canvas: HTMLCanvasElement) {
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+
+  if (!context) {
+    throw new Error("Your browser could not process this signature image.");
+  }
+
+  return context;
+}
+
+function isInkPixel(data: Uint8ClampedArray, index: number) {
+  const red = data[index] ?? 255;
+  const green = data[index + 1] ?? 255;
+  const blue = data[index + 2] ?? 255;
+  const alpha = data[index + 3] ?? 0;
+  const luminance = red * 0.299 + green * 0.587 + blue * 0.114;
+  const minChannel = Math.min(red, green, blue);
+  const maxChannel = Math.max(red, green, blue);
+  const saturation = maxChannel - minChannel;
+  const blueInk = blue > red + 14 && blue > green + 2 && luminance < 220;
+
+  return alpha > 18 && (luminance < 182 || blueInk) && minChannel < 205 && saturation > 8;
+}
+
+function findInkBounds(imageData: ImageData) {
+  const { data, width, height } = imageData;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+
+      if (isInkPixel(data, index)) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  if (maxX < 0 || maxY < 0) {
+    throw new Error("No clear signature ink was found in this image.");
+  }
+
+  const padding = 10;
+  return {
+    minX: Math.max(0, minX - padding),
+    minY: Math.max(0, minY - padding),
+    maxX: Math.min(width - 1, maxX + padding),
+    maxY: Math.min(height - 1, maxY + padding),
+  };
+}
+
+function resizeCanvas(source: HTMLCanvasElement, maxWidth: number, maxHeight: number) {
+  const scale = Math.min(maxWidth / source.width, maxHeight / source.height, 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(source.width * scale));
+  canvas.height = Math.max(1, Math.round(source.height * scale));
+  get2dContext(canvas).drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+function encodeCompressedSignature(source: HTMLCanvasElement) {
+  const widths = [SIGNATURE_OUTPUT_WIDTH, 450, 380, 320, 260];
+  const qualities = [0.88, 0.78, 0.68, 0.58, 0.48];
+
+  for (const width of widths) {
+    const canvas = resizeCanvas(source, width, SIGNATURE_OUTPUT_HEIGHT);
+
+    for (const quality of qualities) {
+      const dataUrl = canvas.toDataURL("image/webp", quality);
+
+      if (
+        dataUrl.startsWith("data:image/webp") &&
+        dataUrl.length <= MAX_SIGNATURE_DATA_URL_LENGTH
+      ) {
+        return dataUrl;
+      }
+    }
+  }
+
+  throw new Error("The signature image is still too large after compression.");
+}
+
+async function processSignatureImage(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please upload a PNG, JPEG or WebP image.");
+  }
+
+  if (file.size > MAX_SIGNATURE_FILE_BYTES) {
+    throw new Error("Please upload a signature image smaller than 6 MB.");
+  }
+
+  const image = await loadImage(file);
+  const sourceScale = Math.min(1, 1400 / Math.max(image.width, image.height));
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = Math.max(1, Math.round(image.width * sourceScale));
+  sourceCanvas.height = Math.max(1, Math.round(image.height * sourceScale));
+
+  const sourceContext = get2dContext(sourceCanvas);
+  sourceContext.drawImage(image, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+  const sourceImageData = sourceContext.getImageData(
+    0,
+    0,
+    sourceCanvas.width,
+    sourceCanvas.height,
+  );
+  const bounds = findInkBounds(sourceImageData);
+  const cropWidth = bounds.maxX - bounds.minX + 1;
+  const cropHeight = bounds.maxY - bounds.minY + 1;
+  const cropCanvas = document.createElement("canvas");
+  cropCanvas.width = cropWidth;
+  cropCanvas.height = cropHeight;
+
+  const cropContext = get2dContext(cropCanvas);
+  const cleanedImageData = cropContext.createImageData(cropWidth, cropHeight);
+
+  for (let y = 0; y < cropHeight; y += 1) {
+    for (let x = 0; x < cropWidth; x += 1) {
+      const sourceX = bounds.minX + x;
+      const sourceY = bounds.minY + y;
+      const sourceIndex = (sourceY * sourceCanvas.width + sourceX) * 4;
+      const targetIndex = (y * cropWidth + x) * 4;
+
+      if (!isInkPixel(sourceImageData.data, sourceIndex)) {
+        cleanedImageData.data[targetIndex + 3] = 0;
+        continue;
+      }
+
+      const red = sourceImageData.data[sourceIndex] ?? 0;
+      const green = sourceImageData.data[sourceIndex + 1] ?? 0;
+      const blue = sourceImageData.data[sourceIndex + 2] ?? 0;
+      const luminance = red * 0.299 + green * 0.587 + blue * 0.114;
+      const alpha = Math.min(255, Math.max(72, (205 - luminance) * 3.1));
+
+      cleanedImageData.data[targetIndex] = Math.max(10, Math.min(48, red * 0.7));
+      cleanedImageData.data[targetIndex + 1] = Math.max(
+        18,
+        Math.min(64, green * 0.75),
+      );
+      cleanedImageData.data[targetIndex + 2] = Math.max(
+        82,
+        Math.min(152, blue * 1.03),
+      );
+      cleanedImageData.data[targetIndex + 3] = alpha;
+    }
+  }
+
+  cropContext.putImageData(cleanedImageData, 0, 0);
+
+  const paddedCanvas = document.createElement("canvas");
+  const padding = 14;
+  paddedCanvas.width = cropWidth + padding * 2;
+  paddedCanvas.height = cropHeight + padding * 2;
+  get2dContext(paddedCanvas).drawImage(cropCanvas, padding, padding);
+
+  return encodeCompressedSignature(paddedCanvas);
+}
+
+function signatureSizeLabel(signatureSrc: string) {
+  if (!signatureSrc.startsWith("data:image/")) {
+    return "Default image";
+  }
+
+  return `${Math.ceil(signatureSrc.length / 1024)} KB compressed`;
+}
+
 export default function AdminEventsEditor({
   initialEvents,
   adminEmail,
@@ -69,6 +264,9 @@ export default function AdminEventsEditor({
   const [selectedSlug, setSelectedSlug] = useState(events[0]?.slug ?? "");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
+  const [uploadingSignature, setUploadingSignature] = useState<0 | 1 | null>(
+    null,
+  );
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.slug === selectedSlug) ?? events[0],
@@ -124,10 +322,71 @@ export default function AdminEventsEditor({
       ...signatory,
     })) as CertificateEvent["signatories"];
     signatories[index][key] = value;
+
+    if (key === "name" && value.trim()) {
+      signatories[index].signatureAlt = `Signature of ${value.trim()}`;
+    }
+
     replaceSelected({
       ...selectedEvent,
       signatories,
     });
+  }
+
+  function updateSignatoryImage(index: 0 | 1, signatureSrc: string) {
+    if (!selectedEvent) {
+      return;
+    }
+
+    const signatories = selectedEvent.signatories.map((signatory) => ({
+      ...signatory,
+    })) as CertificateEvent["signatories"];
+    signatories[index].signatureSrc = signatureSrc;
+    signatories[index].signatureAlt = `Signature of ${signatories[index].name}`;
+    replaceSelected({
+      ...selectedEvent,
+      signatories,
+    });
+  }
+
+  async function handleSignatureUpload(
+    index: 0 | 1,
+    changeEvent: ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = changeEvent.target.files?.[0];
+    changeEvent.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    setUploadingSignature(index);
+    setSaveState("idle");
+    setMessage("");
+
+    try {
+      const signatureSrc = await processSignatureImage(file);
+      updateSignatoryImage(index, signatureSrc);
+      setMessage(
+        "Signature cleaned and compressed. Click Save Event to publish this template change.",
+      );
+    } catch (error) {
+      setSaveState("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not process this signature image.",
+      );
+    } finally {
+      setUploadingSignature(null);
+    }
+  }
+
+  function resetSignatoryImage(index: 0 | 1) {
+    const defaultSignature = getDefaultCertificateEvent().signatories[index];
+    updateSignatoryImage(index, defaultSignature.signatureSrc);
+    setSaveState("idle");
+    setMessage("Default signature restored. Click Save Event to publish it.");
   }
 
   async function saveEvent() {
@@ -410,6 +669,38 @@ export default function AdminEventsEditor({
                 }
               />
             </label>
+            <div className="admin-signature-card">
+              <div className="admin-signature-preview">
+                <Image
+                  src={selectedEvent.signatories[0].signatureSrc}
+                  alt={selectedEvent.signatories[0].signatureAlt}
+                  width={220}
+                  height={92}
+                  unoptimized
+                />
+              </div>
+              <div className="admin-signature-details">
+                <span>Signatory 1 Signature Image</span>
+                <small>{signatureSizeLabel(selectedEvent.signatories[0].signatureSrc)}</small>
+                <div className="admin-signature-actions">
+                  <label className="secondary-action-button admin-upload-button">
+                    {uploadingSignature === 0 ? "Cleaning..." : "Upload Signature"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) => void handleSignatureUpload(0, event)}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="secondary-action-button"
+                    onClick={() => resetSignatoryImage(0)}
+                  >
+                    Use Default
+                  </button>
+                </div>
+              </div>
+            </div>
             <label>
               <span>Signatory 2 Name</span>
               <input
@@ -428,6 +719,38 @@ export default function AdminEventsEditor({
                 }
               />
             </label>
+            <div className="admin-signature-card">
+              <div className="admin-signature-preview">
+                <Image
+                  src={selectedEvent.signatories[1].signatureSrc}
+                  alt={selectedEvent.signatories[1].signatureAlt}
+                  width={220}
+                  height={92}
+                  unoptimized
+                />
+              </div>
+              <div className="admin-signature-details">
+                <span>Signatory 2 Signature Image</span>
+                <small>{signatureSizeLabel(selectedEvent.signatories[1].signatureSrc)}</small>
+                <div className="admin-signature-actions">
+                  <label className="secondary-action-button admin-upload-button">
+                    {uploadingSignature === 1 ? "Cleaning..." : "Upload Signature"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) => void handleSignatureUpload(1, event)}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="secondary-action-button"
+                    onClick={() => resetSignatoryImage(1)}
+                  >
+                    Use Default
+                  </button>
+                </div>
+              </div>
+            </div>
             <label className="admin-field-wide">
               <span>QR Instructions</span>
               <textarea

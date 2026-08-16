@@ -30,7 +30,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="system-credit-bar no-print" role="note">
+          ECERTIFICATE GENERATION AND VERIFICATION SYSTEM BY MR. B. P. SHARAON
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

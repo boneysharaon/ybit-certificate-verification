@@ -45,6 +45,19 @@ input:focus-visible {
   outline-offset: 3px;
 }
 
+.system-credit-bar {
+  width: 100%;
+  padding: 7px 14px;
+  border-bottom: 1px solid rgba(9, 62, 54, 0.18);
+  background: var(--accent-deep);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-align: center;
+}
+
 .site-shell {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
@@ -701,6 +714,11 @@ input:focus-visible {
 }
 
 @media (max-width: 560px) {
+  .system-credit-bar {
+    padding: 6px 10px;
+    font-size: 0.68rem;
+  }
+
   .site-shell {
     width: calc(100% - 20px);
   }
@@ -1050,7 +1068,8 @@ body.pdf-export-mode {
 }
 
 body.pdf-export-mode .online-only,
-body.pdf-export-mode .certificate-actions {
+body.pdf-export-mode .certificate-actions,
+body.pdf-export-mode .system-credit-bar {
   display: none !important;
 }
 

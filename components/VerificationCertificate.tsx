@@ -59,6 +59,8 @@ function renderTemplateText(
   certificate: CertificateRecord,
   event: CertificateEvent,
 ) {
+  const meritRank = certificate.meritRank || "the recorded";
+  const meritCategory = certificate.meritCategory || event.eventName;
   const replacements: Record<string, ReactNode> = {
     certificateId: certificate.letterId,
     studentName: <strong>{certificate.studentName}</strong>,
@@ -66,6 +68,9 @@ function renderTemplateText(
     eventName: event.eventName,
     eventDate: event.eventDate,
     issueDate: event.issueDate,
+    meritRank: <strong>{meritRank}</strong>,
+    meritAwardTerm: event.meritAwardTerm,
+    meritCategory: <strong>{meritCategory}</strong>,
   };
 
   return template
@@ -202,6 +207,14 @@ export default function VerificationCertificate({
             <span>Event</span>
             <strong>{event.eventName}</strong>
           </div>
+          {event.certificateType === "Merit" ? (
+            <div>
+              <span>Achievement</span>
+              <strong>
+                {certificate.meritRank || "Recorded"} {event.meritAwardTerm}
+              </strong>
+            </div>
+          ) : null}
           <div>
             <span>Event Date</span>
             <strong>{event.eventDate}</strong>

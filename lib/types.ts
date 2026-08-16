@@ -2,6 +2,8 @@ export type CertificateRecord = {
   letterId: string;
   studentName: string;
   className: string;
+  meritRank?: string;
+  meritCategory?: string;
 };
 
 export type CertificateLookupResult =

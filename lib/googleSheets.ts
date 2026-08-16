@@ -179,6 +179,11 @@ function spreadsheetColumnName(columnNumber: number) {
 const EVENTS_SHEET_LAST_COLUMN = spreadsheetColumnName(
   EVENTS_SHEET_HEADERS.length,
 );
+const EVENTS_STATUS_COLUMN_INDEX = EVENTS_SHEET_HEADERS.indexOf("Status");
+const EVENTS_CERTIFICATE_TYPE_COLUMN_INDEX =
+  EVENTS_SHEET_HEADERS.indexOf("Certificate Type");
+const EVENTS_MERIT_AWARD_TERM_COLUMN_INDEX =
+  EVENTS_SHEET_HEADERS.indexOf("Merit Award Term");
 
 function spreadsheetUrl(config: SheetsConfig, path = "") {
   return `${GOOGLE_SHEETS_API_URL}/${encodeURIComponent(
@@ -218,6 +223,18 @@ function getHeadingIndex(headers: string[], expectedHeading: string) {
   return headers.findIndex(
     (heading) => heading.trim().toLowerCase() === expectedHeading,
   );
+}
+
+function getFirstHeadingIndex(headers: string[], expectedHeadings: string[]) {
+  for (const heading of expectedHeadings) {
+    const index = getHeadingIndex(headers, heading);
+
+    if (index >= 0) {
+      return index;
+    }
+  }
+
+  return -1;
 }
 
 function normaliseRows(values: unknown): string[][] {
@@ -347,8 +364,8 @@ async function formatEventsSheet(sheetId: number) {
           sheetId,
           startRowIndex: 1,
           endRowIndex: 1000,
-          startColumnIndex: 18,
-          endColumnIndex: 19,
+          startColumnIndex: EVENTS_STATUS_COLUMN_INDEX,
+          endColumnIndex: EVENTS_STATUS_COLUMN_INDEX + 1,
         },
         rule: {
           condition: {
@@ -357,6 +374,52 @@ async function formatEventsSheet(sheetId: number) {
               { userEnteredValue: "Published" },
               { userEnteredValue: "Draft" },
               { userEnteredValue: "Archived" },
+            ],
+          },
+          strict: true,
+          showCustomUi: true,
+        },
+      },
+    },
+    {
+      setDataValidation: {
+        range: {
+          sheetId,
+          startRowIndex: 1,
+          endRowIndex: 1000,
+          startColumnIndex: EVENTS_CERTIFICATE_TYPE_COLUMN_INDEX,
+          endColumnIndex: EVENTS_CERTIFICATE_TYPE_COLUMN_INDEX + 1,
+        },
+        rule: {
+          condition: {
+            type: "ONE_OF_LIST",
+            values: [
+              { userEnteredValue: "Appreciation" },
+              { userEnteredValue: "Participation" },
+              { userEnteredValue: "Merit" },
+            ],
+          },
+          strict: true,
+          showCustomUi: true,
+        },
+      },
+    },
+    {
+      setDataValidation: {
+        range: {
+          sheetId,
+          startRowIndex: 1,
+          endRowIndex: 1000,
+          startColumnIndex: EVENTS_MERIT_AWARD_TERM_COLUMN_INDEX,
+          endColumnIndex: EVENTS_MERIT_AWARD_TERM_COLUMN_INDEX + 1,
+        },
+        rule: {
+          condition: {
+            type: "ONE_OF_LIST",
+            values: [
+              { userEnteredValue: "Rank" },
+              { userEnteredValue: "Position" },
+              { userEnteredValue: "Prize" },
             ],
           },
           strict: true,
@@ -453,6 +516,24 @@ function parseCertificateRows(
   const classIndex = getHeadingIndex(headers, "class");
   const branchIndex = getHeadingIndex(headers, "branch");
   const statusIndex = getHeadingIndex(headers, "status");
+  const meritRankIndex = getFirstHeadingIndex(headers, [
+    "rank",
+    "position",
+    "prize",
+    "award",
+    "result",
+    "merit rank",
+    "merit position",
+    "merit prize",
+  ]);
+  const meritCategoryIndex = getFirstHeadingIndex(headers, [
+    "event/category",
+    "event category",
+    "category",
+    "competition",
+    "event",
+    "activity",
+  ]);
 
   if (letterIdIndex < 0 || studentNameIndex < 0 || classIndex < 0) {
     throw new SheetsConfigurationError();
@@ -493,6 +574,18 @@ function parseCertificateRows(
       studentName,
       className,
     };
+    const meritRank =
+      meritRankIndex >= 0 ? row[meritRankIndex]?.trim() : "";
+    const meritCategory =
+      meritCategoryIndex >= 0 ? row[meritCategoryIndex]?.trim() : "";
+
+    if (meritRank) {
+      certificate.meritRank = meritRank;
+    }
+
+    if (meritCategory) {
+      certificate.meritCategory = meritCategory;
+    }
 
     return {
       found: true,

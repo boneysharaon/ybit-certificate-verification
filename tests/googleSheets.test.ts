@@ -119,6 +119,50 @@ describe("getCertificateByLetterId", () => {
     });
   });
 
+  it("includes optional Merit rank and category columns", async () => {
+    configureEnvironment();
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse({ access_token: "access-token" }))
+        .mockResolvedValueOnce(
+          jsonResponse({
+            values: [
+              [
+                "Letter ID",
+                "Student Name",
+                "Class",
+                "Rank",
+                "Event/Category",
+              ],
+              [
+                "YBIT/CulturalDept/YF/V/001",
+                "Saee Manish Dhande",
+                "T.E. Computer Science Engineering",
+                "First",
+                "Solo Singing",
+              ],
+            ],
+          }),
+        ),
+    );
+
+    await expect(
+      getCertificateByLetterId("YBIT/CulturalDept/YF/V/001"),
+    ).resolves.toEqual({
+      found: true,
+      status: "valid",
+      certificate: {
+        letterId: "YBIT/CulturalDept/YF/V/001",
+        studentName: "Saee Manish Dhande",
+        className: "T.E. Computer Science Engineering",
+        meritRank: "First",
+        meritCategory: "Solo Singing",
+      },
+    });
+  });
+
   it("returns not found for a valid but nonexistent ID", async () => {
     configureEnvironment();
     vi.stubGlobal(

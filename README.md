@@ -34,9 +34,12 @@ Optional heading:
 | --- | --- |
 | D | Branch |
 | E | Status |
+| F | Rank / Position / Prize |
+| G | Event/Category |
 
 Blank Status or `Valid` is treated as valid. `Revoked` is treated as revoked.
 If `Branch` is present, the public verification document displays `Class` and `Branch` together, such as `T.E. Computer Science Engineering`.
+For Certificate of Merit events, add a rank/result column such as `Rank`, `Position`, `Prize`, `Award`, or `Result`, and a category column such as `Event/Category`, `Category`, `Competition`, or `Event`.
 
 Example row:
 
@@ -72,8 +75,11 @@ The `Events` tab has these columns:
 | T | Verify Button Label |
 | U | Signatory 1 Signature Image |
 | V | Signatory 2 Signature Image |
+| W | Certificate Type |
+| X | Merit Award Term |
 
 Only rows with `Status` set to `Published` appear on the public homepage. `Draft` and `Archived` rows stay hidden.
+`Certificate Type` can be `Appreciation`, `Participation`, or `Merit`. For Merit certificates, `Merit Award Term` can be `Rank`, `Position`, or `Prize`.
 
 For editable letter text, use placeholders:
 
@@ -84,6 +90,9 @@ For editable letter text, use placeholders:
 {{eventDate}}
 {{issueDate}}
 {{certificateId}}
+{{meritRank}}
+{{meritAwardTerm}}
+{{meritCategory}}
 ```
 
 ## Enable Google Sheets API
@@ -156,6 +165,8 @@ https://ybit-certificate-verification.vercel.app/admin
 Admin access uses Google sign-in. Only emails listed in `ADMIN_EMAILS` are allowed.
 
 The editor can upload a custom signature image for each signatory. Uploads are processed in the browser before saving: the image is cropped to the signature ink, light paper background is made transparent, and the result is compressed before being stored in the `Events` tab. The public certificate renders the cleaned signature with transparent/multiply styling so it does not look like a pasted photo.
+
+Each event also has a `Certificate Type` dropdown. `Appreciation` and `Participation` use the same editable fields. `Merit` switches the default title/body to a merit certificate and uses per-student rank/category values from the certificate-data tab.
 
 Create a Google OAuth web client in the same Google Cloud project and add this authorized redirect URI:
 

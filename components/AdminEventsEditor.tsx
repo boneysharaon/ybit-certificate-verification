@@ -4,8 +4,12 @@ import Image from "next/image";
 import { type ChangeEvent, useMemo, useState } from "react";
 import {
   getDefaultCertificateEvent,
+  getDefaultLetterBodyForCertificateType,
+  getDefaultLetterTitleForCertificateType,
   slugifyEventName,
   type CertificateEvent,
+  type CertificateType,
+  type MeritAwardTerm,
 } from "@/lib/certificateEvents";
 
 type AdminEventsEditorProps = {
@@ -309,6 +313,21 @@ export default function AdminEventsEditor({
     });
   }
 
+  function updateCertificateType(certificateType: CertificateType) {
+    if (!selectedEvent) {
+      return;
+    }
+
+    replaceSelected({
+      ...selectedEvent,
+      certificateType,
+      letterTitle: getDefaultLetterTitleForCertificateType(certificateType),
+      letterBody: getDefaultLetterBodyForCertificateType(certificateType),
+    });
+    setSaveState("idle");
+    setMessage("");
+  }
+
   function updateSignatory(
     index: 0 | 1,
     key: "name" | "designation",
@@ -544,6 +563,37 @@ export default function AdminEventsEditor({
                 <option>Archived</option>
               </select>
             </label>
+            <label>
+              <span>Certificate Type</span>
+              <select
+                value={selectedEvent.certificateType}
+                onChange={(event) =>
+                  updateCertificateType(event.target.value as CertificateType)
+                }
+              >
+                <option>Appreciation</option>
+                <option>Participation</option>
+                <option>Merit</option>
+              </select>
+            </label>
+            {selectedEvent.certificateType === "Merit" ? (
+              <label>
+                <span>Merit Award Term</span>
+                <select
+                  value={selectedEvent.meritAwardTerm}
+                  onChange={(event) =>
+                    updateField(
+                      "meritAwardTerm",
+                      event.target.value as MeritAwardTerm,
+                    )
+                  }
+                >
+                  <option>Prize</option>
+                  <option>Position</option>
+                  <option>Rank</option>
+                </select>
+              </label>
+            ) : null}
             <label>
               <span>Sheet Tab Name</span>
               <input

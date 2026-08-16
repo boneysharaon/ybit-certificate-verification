@@ -1,4 +1,6 @@
 export type CertificateEventStatus = "Published" | "Draft" | "Archived";
+export type CertificateType = "Appreciation" | "Participation" | "Merit";
+export type MeritAwardTerm = "Rank" | "Position" | "Prize";
 
 export type CertificateSignatory = {
   name: string;
@@ -18,6 +20,8 @@ export type CertificateEvent = {
   certificateIdExample: string;
   verifyButtonLabel: string;
   eventName: string;
+  certificateType: CertificateType;
+  meritAwardTerm: MeritAwardTerm;
   eventDate: string;
   issueDate: string;
   letterTitle: string;
@@ -52,6 +56,8 @@ export const EVENTS_SHEET_HEADERS = [
   "Verify Button Label",
   "Signatory 1 Signature Image",
   "Signatory 2 Signature Image",
+  "Certificate Type",
+  "Merit Award Term",
 ] as const;
 
 const MAX_SIGNATURE_DATA_URL_LENGTH = 48_000;
@@ -62,6 +68,16 @@ const DEFAULT_LETTER_BODY = [
   "This is to place on record our sincere appreciation for {{studentName}}, a student of {{className}}, for volunteering during the {{eventName}} held at Yashwantrao Bhonsale Institute of Technology, Sawantwadi, on {{eventDate}}.",
   "The Cultural Committee gratefully acknowledges the student's dedication, responsible service and valuable contribution, which helped in the smooth conduct of the programme and in making the event a grand success.",
   "We sincerely thank the student for their help in making the event a grand success.",
+];
+
+const DEFAULT_PARTICIPATION_LETTER_BODY = [
+  "This is to certify that {{studentName}}, a student of {{className}}, participated in the {{eventName}} held at Yashwantrao Bhonsale Institute of Technology, Sawantwadi, on {{eventDate}}.",
+  "The institute appreciates the student's active participation and contribution to the successful conduct of the programme.",
+];
+
+const DEFAULT_MERIT_LETTER_BODY = [
+  "This is to certify that {{studentName}}, a student of {{className}}, secured {{meritRank}} {{meritAwardTerm}} in {{meritCategory}} during the {{eventName}} held at Yashwantrao Bhonsale Institute of Technology, Sawantwadi, on {{eventDate}}.",
+  "The institute congratulates the student on this achievement and wishes continued success in future endeavours.",
 ];
 
 const DEFAULT_QR_INSTRUCTIONS = [
@@ -98,6 +114,8 @@ export const fallbackCertificateEvents = [
     certificateIdExample: "001",
     verifyButtonLabel: "Verify eCertificate",
     eventName: "Youth Festival 2026",
+    certificateType: "Appreciation",
+    meritAwardTerm: "Prize",
     eventDate: "08/08/2026",
     issueDate: "08/08/2026",
     letterTitle: "LETTER OF APPRECIATION",
@@ -138,6 +156,37 @@ function parseStatus(value: unknown): CertificateEventStatus {
   }
 
   return "Draft";
+}
+
+function parseCertificateType(value: unknown): CertificateType {
+  const normalised = normaliseCell(value).toLowerCase();
+
+  if (normalised === "merit" || normalised === "certificate of merit") {
+    return "Merit";
+  }
+
+  if (
+    normalised === "participation" ||
+    normalised === "certificate of participation"
+  ) {
+    return "Participation";
+  }
+
+  return "Appreciation";
+}
+
+function parseMeritAwardTerm(value: unknown): MeritAwardTerm {
+  const normalised = normaliseCell(value).toLowerCase();
+
+  if (normalised === "rank") {
+    return "Rank";
+  }
+
+  if (normalised === "position") {
+    return "Position";
+  }
+
+  return "Prize";
 }
 
 function splitParagraphs(value: unknown, fallback: string[]) {
@@ -205,6 +254,34 @@ function parseSignatureSource(value: unknown, fallback: string) {
   return isAllowedSignatureSource(signatureSrc) ? signatureSrc : fallback;
 }
 
+export function getDefaultLetterTitleForCertificateType(
+  certificateType: CertificateType,
+) {
+  if (certificateType === "Merit") {
+    return "CERTIFICATE OF MERIT";
+  }
+
+  if (certificateType === "Participation") {
+    return "CERTIFICATE OF PARTICIPATION";
+  }
+
+  return "LETTER OF APPRECIATION";
+}
+
+export function getDefaultLetterBodyForCertificateType(
+  certificateType: CertificateType,
+) {
+  if (certificateType === "Merit") {
+    return [...DEFAULT_MERIT_LETTER_BODY];
+  }
+
+  if (certificateType === "Participation") {
+    return [...DEFAULT_PARTICIPATION_LETTER_BODY];
+  }
+
+  return [...DEFAULT_LETTER_BODY];
+}
+
 function normaliseSignatureSource(value: unknown, fallback: string) {
   const signatureSrc = normaliseCell(value);
 
@@ -254,6 +331,8 @@ export function eventToSheetRow(event: CertificateEvent) {
     event.verifyButtonLabel,
     event.signatories[0].signatureSrc,
     event.signatories[1].signatureSrc,
+    event.certificateType,
+    event.meritAwardTerm,
   ];
 }
 
@@ -290,6 +369,12 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
   const verifyButtonLabel =
     normaliseCell(getValue(headers, row, "Verify Button Label")) ||
     "Verify eCertificate";
+  const certificateType = parseCertificateType(
+    getValue(headers, row, "Certificate Type"),
+  );
+  const meritAwardTerm = parseMeritAwardTerm(
+    getValue(headers, row, "Merit Award Term"),
+  );
   const signatoryOneName =
     normaliseCell(getValue(headers, row, "Signatory 1 Name")) ||
     DEFAULT_SIGNATORIES[0].name;
@@ -322,14 +407,16 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
     certificateIdExample,
     verifyButtonLabel,
     eventName,
+    certificateType,
+    meritAwardTerm,
     eventDate: normaliseCell(getValue(headers, row, "Event Date")),
     issueDate: normaliseCell(getValue(headers, row, "Issue Date")),
     letterTitle:
       normaliseCell(getValue(headers, row, "Letter Title")) ||
-      "LETTER OF APPRECIATION",
+      getDefaultLetterTitleForCertificateType(certificateType),
     letterBody: splitParagraphs(
       getValue(headers, row, "Letter Body"),
-      DEFAULT_LETTER_BODY,
+      getDefaultLetterBodyForCertificateType(certificateType),
     ),
     qrInstructions: splitLines(
       getValue(headers, row, "QR Instructions"),
@@ -372,6 +459,12 @@ export function normaliseCertificateEvent(input: unknown): CertificateEvent {
   const certificateIdExample = padCertificateExample(
     getString("certificateIdExample"),
     certificateIdDigits,
+  );
+  const certificateType = parseCertificateType(
+    (body as Record<string, unknown>).certificateType,
+  );
+  const meritAwardTerm = parseMeritAwardTerm(
+    (body as Record<string, unknown>).meritAwardTerm,
   );
 
   if (!eventName || !slug || !sheetTabName || !certificateIdPrefix) {
@@ -436,12 +529,19 @@ export function normaliseCertificateEvent(input: unknown): CertificateEvent {
     certificateIdExample,
     verifyButtonLabel: getString("verifyButtonLabel") || "Verify eCertificate",
     eventName,
+    certificateType,
+    meritAwardTerm,
     eventDate: getString("eventDate"),
     issueDate: getString("issueDate"),
-    letterTitle: getString("letterTitle") || "LETTER OF APPRECIATION",
+    letterTitle:
+      getString("letterTitle") ||
+      getDefaultLetterTitleForCertificateType(certificateType),
     letterBody: Array.isArray(letterBodyInput)
       ? letterBodyInput.map((value) => normaliseCell(value)).filter(Boolean)
-      : splitParagraphs(letterBodyInput, DEFAULT_LETTER_BODY),
+      : splitParagraphs(
+          letterBodyInput,
+          getDefaultLetterBodyForCertificateType(certificateType),
+        ),
     qrInstructions: Array.isArray(qrInstructionsInput)
       ? qrInstructionsInput.map((value) => normaliseCell(value)).filter(Boolean)
       : splitLines(qrInstructionsInput, DEFAULT_QR_INSTRUCTIONS),

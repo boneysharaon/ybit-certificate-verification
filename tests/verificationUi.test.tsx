@@ -47,6 +47,34 @@ describe("verification UI", () => {
     expect(screen.getByText("Click on Verify.")).toBeInTheDocument();
   });
 
+  it("renders Merit certificate rank and category placeholders", () => {
+    render(
+      <VerificationCertificate
+        event={{
+          ...event,
+          certificateType: "Merit",
+          meritAwardTerm: "Position",
+          letterTitle: "CERTIFICATE OF MERIT",
+          letterBody: [
+            "This is to certify that {{studentName}} secured {{meritRank}} {{meritAwardTerm}} in {{meritCategory}}.",
+          ],
+        }}
+        certificate={{
+          letterId: "YBIT/CulturalDept/YF/V/001",
+          studentName: "Saee Manish Dhande",
+          className: "T.E. Computer Science Engineering",
+          meritRank: "First",
+          meritCategory: "Solo Singing",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("CERTIFICATE OF MERIT")).toBeInTheDocument();
+    expect(screen.getAllByText("First").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Solo Singing").length).toBeGreaterThan(0);
+    expect(screen.getByText("First Position")).toBeInTheDocument();
+  });
+
   it("shows the not-found message for a valid but nonexistent ID", async () => {
     vi.stubGlobal(
       "fetch",

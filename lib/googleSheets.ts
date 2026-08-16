@@ -900,7 +900,7 @@ export async function getCertificateByLetterId(
     options.certificateIdPrefix ?? "YBIT/CulturalDept/YF/V/";
   const certificateIdDigits = options.certificateIdDigits ?? 3;
   const certificateIdExample = options.certificateIdExample ?? "001";
-  const rows = await readValues(tabName, "A:E");
+  const rows = await readValues(tabName, "A:Z");
 
   return parseCertificateRows(rows, normalizedLetterId, {
     certificateIdPrefix,

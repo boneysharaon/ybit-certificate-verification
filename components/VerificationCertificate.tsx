@@ -215,6 +215,12 @@ export default function VerificationCertificate({
               </strong>
             </div>
           ) : null}
+          {event.certificateType === "Merit" ? (
+            <div>
+              <span>Category</span>
+              <strong>{certificate.meritCategory || event.eventName}</strong>
+            </div>
+          ) : null}
           <div>
             <span>Event Date</span>
             <strong>{event.eventDate}</strong>

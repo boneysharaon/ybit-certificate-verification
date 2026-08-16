@@ -121,32 +121,35 @@ describe("getCertificateByLetterId", () => {
 
   it("includes optional Merit rank and category columns", async () => {
     configureEnvironment();
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(jsonResponse({ access_token: "access-token" }))
-        .mockResolvedValueOnce(
-          jsonResponse({
-            values: [
-              [
-                "Letter ID",
-                "Student Name",
-                "Class",
-                "Rank",
-                "Event/Category",
-              ],
-              [
-                "YBIT/CulturalDept/YF/V/001",
-                "Saee Manish Dhande",
-                "T.E. Computer Science Engineering",
-                "First",
-                "Solo Singing",
-              ],
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ access_token: "access-token" }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          values: [
+            [
+              "Letter ID",
+              "Student Name",
+              "Class",
+              "Branch",
+              "Rank",
+              "Event/Category",
+              "Status",
             ],
-          }),
-        ),
-    );
+            [
+              "YBIT/CulturalDept/YF/V/001",
+              "Saee Manish Dhande",
+              "T.E.",
+              "Computer Science Engineering",
+              "First",
+              "Solo Singing",
+              "Valid",
+            ],
+          ],
+        }),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
 
     await expect(
       getCertificateByLetterId("YBIT/CulturalDept/YF/V/001"),
@@ -161,6 +164,7 @@ describe("getCertificateByLetterId", () => {
         meritCategory: "Solo Singing",
       },
     });
+    expect(String(fetchMock.mock.calls[1][0])).toContain("A%3AZ");
   });
 
   it("returns not found for a valid but nonexistent ID", async () => {

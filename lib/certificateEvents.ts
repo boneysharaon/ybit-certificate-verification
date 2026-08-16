@@ -1,5 +1,9 @@
 export type CertificateEventStatus = "Published" | "Draft" | "Archived";
-export type CertificateType = "Appreciation" | "Participation" | "Merit";
+export type CertificateType =
+  | "Appreciation"
+  | "Participation"
+  | "Merit"
+  | "Recognition";
 export type MeritAwardTerm = "Rank" | "Position" | "Prize";
 
 export type CertificateSignatory = {
@@ -78,6 +82,11 @@ const DEFAULT_PARTICIPATION_LETTER_BODY = [
 const DEFAULT_MERIT_LETTER_BODY = [
   "This is to certify that {{studentName}}, a student of {{className}}, secured {{meritRank}} {{meritAwardTerm}} in {{meritCategory}} during the {{eventName}} held at Yashwantrao Bhonsale Institute of Technology, Sawantwadi, on {{eventDate}}.",
   "The institute congratulates the student on this achievement and wishes continued success in future endeavours.",
+];
+
+const DEFAULT_RECOGNITION_LETTER_BODY = [
+  "This is to certify that {{recipientName}}, {{recipientContext}}, rendered dedicated service as {{recognitionRole}} of {{recognitionBodyName}} {{recognitionBodyType}} for the academic year {{recognitionAcademicYear}}{{recognitionTermText}}.",
+  "The institute appreciates this contribution and acknowledges the commitment shown during the stated period.",
 ];
 
 const DEFAULT_QR_INSTRUCTIONS = [
@@ -171,6 +180,13 @@ function parseCertificateType(value: unknown): CertificateType {
 
   if (normalised === "merit" || normalised === "certificate of merit") {
     return "Merit";
+  }
+
+  if (
+    normalised === "recognition" ||
+    normalised === "certificate of recognition"
+  ) {
+    return "Recognition";
   }
 
   if (
@@ -269,6 +285,10 @@ export function getDefaultLetterTitleForCertificateType(
     return "CERTIFICATE OF MERIT";
   }
 
+  if (certificateType === "Recognition") {
+    return "CERTIFICATE OF RECOGNITION";
+  }
+
   if (certificateType === "Participation") {
     return "CERTIFICATE OF PARTICIPATION";
   }
@@ -281,6 +301,10 @@ export function getDefaultLetterBodyForCertificateType(
 ) {
   if (certificateType === "Merit") {
     return [...DEFAULT_MERIT_LETTER_BODY];
+  }
+
+  if (certificateType === "Recognition") {
+    return [...DEFAULT_RECOGNITION_LETTER_BODY];
   }
 
   if (certificateType === "Participation") {
@@ -298,6 +322,24 @@ export function getCertificateDataHeaders(event: Pick<
 
   if (event.certificateType === "Merit") {
     return [...baseHeaders, event.meritAwardTerm, "Event/Category", "Status"];
+  }
+
+  if (event.certificateType === "Recognition") {
+    return [
+      "Letter ID",
+      "Recipient Type",
+      "Recipient Name",
+      "Class",
+      "Branch",
+      "Role",
+      "Role Other",
+      "Body Type",
+      "Body Other",
+      "Body Name",
+      "Academic Year",
+      "Term",
+      "Status",
+    ];
   }
 
   return [...baseHeaders, "Status"];

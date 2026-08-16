@@ -167,6 +167,70 @@ describe("getCertificateByLetterId", () => {
     expect(String(fetchMock.mock.calls[1][0])).toContain("A%3AZ");
   });
 
+  it("includes Recognition recipient and service columns", async () => {
+    configureEnvironment();
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse({ access_token: "access-token" }))
+        .mockResolvedValueOnce(
+          jsonResponse({
+            values: [
+              [
+                "Letter ID",
+                "Recipient Type",
+                "Recipient Name",
+                "Class",
+                "Branch",
+                "Role",
+                "Role Other",
+                "Body Type",
+                "Body Other",
+                "Body Name",
+                "Academic Year",
+                "Term",
+                "Status",
+              ],
+              [
+                "YBIT/CulturalDept/YF/V/001",
+                "Faculty",
+                "Prof. Asha Patil",
+                "",
+                "",
+                "Any other (Specify)",
+                "Convenor",
+                "Other",
+                "Council",
+                "Student Development",
+                "2025-26",
+                "Two-year term",
+                "Valid",
+              ],
+            ],
+          }),
+        ),
+    );
+
+    await expect(
+      getCertificateByLetterId("YBIT/CulturalDept/YF/V/001"),
+    ).resolves.toEqual({
+      found: true,
+      status: "valid",
+      certificate: {
+        letterId: "YBIT/CulturalDept/YF/V/001",
+        studentName: "Prof. Asha Patil",
+        className: "",
+        recipientType: "Faculty",
+        recognitionRole: "Convenor",
+        recognitionBodyType: "Council",
+        recognitionBodyName: "Student Development",
+        recognitionAcademicYear: "2025-26",
+        recognitionTerm: "Two-year term",
+      },
+    });
+  });
+
   it("returns not found for a valid but nonexistent ID", async () => {
     configureEnvironment();
     vi.stubGlobal(

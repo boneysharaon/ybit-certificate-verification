@@ -54,6 +54,42 @@ function waitForNextFrame() {
   });
 }
 
+function lowerTrimmed(value: string | undefined) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function getRecipientContext(certificate: CertificateRecord) {
+  const recipientType = lowerTrimmed(certificate.recipientType);
+
+  if (recipientType.includes("faculty")) {
+    return "a faculty member";
+  }
+
+  if (certificate.className) {
+    return (
+      <>
+        a student of <strong>{certificate.className}</strong>
+      </>
+    );
+  }
+
+  if (recipientType.includes("student")) {
+    return "a student";
+  }
+
+  return "a recognised recipient";
+}
+
+function combineRecognitionBody(certificate: CertificateRecord) {
+  return [
+    certificate.recognitionBodyName,
+    certificate.recognitionBodyType,
+  ]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
 function renderTemplateText(
   template: string,
   certificate: CertificateRecord,
@@ -61,8 +97,14 @@ function renderTemplateText(
 ) {
   const meritRank = certificate.meritRank || "the recorded";
   const meritCategory = certificate.meritCategory || event.eventName;
+  const recognitionTermText = certificate.recognitionTerm
+    ? ` (${certificate.recognitionTerm})`
+    : "";
   const replacements: Record<string, ReactNode> = {
     certificateId: certificate.letterId,
+    recipientName: <strong>{certificate.studentName}</strong>,
+    recipientType: certificate.recipientType || "Recipient",
+    recipientContext: getRecipientContext(certificate),
     studentName: <strong>{certificate.studentName}</strong>,
     className: <strong>{certificate.className}</strong>,
     eventName: event.eventName,
@@ -71,6 +113,15 @@ function renderTemplateText(
     meritRank: <strong>{meritRank}</strong>,
     meritAwardTerm: event.meritAwardTerm,
     meritCategory: <strong>{meritCategory}</strong>,
+    recognitionRole: (
+      <strong>{certificate.recognitionRole || "the assigned role"}</strong>
+    ),
+    recognitionBodyType: certificate.recognitionBodyType || "body",
+    recognitionBodyName: certificate.recognitionBodyName || "the concerned",
+    recognitionAcademicYear:
+      certificate.recognitionAcademicYear || "the stated academic year",
+    recognitionTerm: certificate.recognitionTerm || "",
+    recognitionTermText,
   };
 
   return template
@@ -92,6 +143,9 @@ export default function VerificationCertificate({
 }: VerificationCertificateProps) {
   const certificateRef = useRef<HTMLElement>(null);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const isMerit = event.certificateType === "Merit";
+  const isRecognition = event.certificateType === "Recognition";
+  const recognitionBody = combineRecognitionBody(certificate);
 
   const pdfFileName = certificatePdfFileName(certificate);
 
@@ -196,18 +250,20 @@ export default function VerificationCertificate({
             <strong>{certificate.letterId}</strong>
           </div>
           <div>
-            <span>Student Name</span>
+            <span>{isRecognition ? "Recipient Name" : "Student Name"}</span>
             <strong>{certificate.studentName}</strong>
           </div>
+          {certificate.className ? (
+            <div>
+              <span>Class</span>
+              <strong>{certificate.className}</strong>
+            </div>
+          ) : null}
           <div>
-            <span>Class</span>
-            <strong>{certificate.className}</strong>
-          </div>
-          <div>
-            <span>Event</span>
+            <span>{isRecognition ? "Certificate" : "Event"}</span>
             <strong>{event.eventName}</strong>
           </div>
-          {event.certificateType === "Merit" ? (
+          {isMerit ? (
             <div>
               <span>Achievement</span>
               <strong>
@@ -215,16 +271,42 @@ export default function VerificationCertificate({
               </strong>
             </div>
           ) : null}
-          {event.certificateType === "Merit" ? (
+          {isMerit ? (
             <div>
               <span>Category</span>
               <strong>{certificate.meritCategory || event.eventName}</strong>
             </div>
           ) : null}
-          <div>
-            <span>Event Date</span>
-            <strong>{event.eventDate}</strong>
-          </div>
+          {isRecognition && certificate.recognitionRole ? (
+            <div>
+              <span>Role</span>
+              <strong>{certificate.recognitionRole}</strong>
+            </div>
+          ) : null}
+          {isRecognition && recognitionBody ? (
+            <div>
+              <span>Body</span>
+              <strong>{recognitionBody}</strong>
+            </div>
+          ) : null}
+          {isRecognition && certificate.recognitionAcademicYear ? (
+            <div>
+              <span>Academic Year</span>
+              <strong>{certificate.recognitionAcademicYear}</strong>
+            </div>
+          ) : null}
+          {isRecognition && certificate.recognitionTerm ? (
+            <div>
+              <span>Term</span>
+              <strong>{certificate.recognitionTerm}</strong>
+            </div>
+          ) : null}
+          {!isRecognition ? (
+            <div>
+              <span>Event Date</span>
+              <strong>{event.eventDate}</strong>
+            </div>
+          ) : null}
           <div>
             <span>Issue Date</span>
             <strong>{event.issueDate}</strong>

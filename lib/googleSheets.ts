@@ -248,6 +248,10 @@ function normaliseRows(values: unknown): string[][] {
   );
 }
 
+function isOtherChoice(value: string) {
+  return /^(?:other|any other(?:\s*\(specify\))?)$/i.test(value.trim());
+}
+
 async function readValues(
   tabName: string,
   range: string,
@@ -367,6 +371,9 @@ function validationRequest(
 
 async function formatCertificateDataSheet(sheetId: number, headers: string[]) {
   const statusColumnIndex = getHeadingIndex(headers, "status");
+  const recipientTypeColumnIndex = getHeadingIndex(headers, "recipient type");
+  const roleColumnIndex = getHeadingIndex(headers, "role");
+  const bodyTypeColumnIndex = getHeadingIndex(headers, "body type");
   const meritColumnIndex = getFirstHeadingIndex(headers, [
     "rank",
     "position",
@@ -433,6 +440,46 @@ async function formatCertificateDataSheet(sheetId: number, headers: string[]) {
 
   if (statusColumnIndex >= 0) {
     requests.push(validationRequest(sheetId, statusColumnIndex, ["Valid", "Revoked"]));
+  }
+
+  if (recipientTypeColumnIndex >= 0) {
+    requests.push(
+      validationRequest(
+        sheetId,
+        recipientTypeColumnIndex,
+        ["Student", "Faculty"],
+        false,
+      ),
+    );
+  }
+
+  if (roleColumnIndex >= 0) {
+    requests.push(
+      validationRequest(
+        sheetId,
+        roleColumnIndex,
+        [
+          "President",
+          "Vice President",
+          "Secretary",
+          "Treasurer",
+          "Member",
+          "Other",
+        ],
+        false,
+      ),
+    );
+  }
+
+  if (bodyTypeColumnIndex >= 0) {
+    requests.push(
+      validationRequest(
+        sheetId,
+        bodyTypeColumnIndex,
+        ["Club", "Society", "Committee", "Association", "Council", "Other"],
+        false,
+      ),
+    );
   }
 
   if (meritColumnIndex >= 0) {
@@ -612,6 +659,7 @@ async function formatEventsSheet(sheetId: number) {
               { userEnteredValue: "Appreciation" },
               { userEnteredValue: "Participation" },
               { userEnteredValue: "Merit" },
+              { userEnteredValue: "Recognition" },
             ],
           },
           strict: true,
@@ -727,10 +775,20 @@ function parseCertificateRows(
 
   const headers = rows[0];
   const letterIdIndex = getHeadingIndex(headers, "letter id");
-  const studentNameIndex = getHeadingIndex(headers, "student name");
+  const studentNameIndex = getFirstHeadingIndex(headers, [
+    "recipient name",
+    "student name",
+    "faculty name",
+    "name",
+  ]);
   const classIndex = getHeadingIndex(headers, "class");
   const branchIndex = getHeadingIndex(headers, "branch");
   const statusIndex = getHeadingIndex(headers, "status");
+  const recipientTypeIndex = getFirstHeadingIndex(headers, [
+    "recipient type",
+    "certificate for",
+    "type",
+  ]);
   const meritRankIndex = getFirstHeadingIndex(headers, [
     "rank",
     "position",
@@ -749,8 +807,57 @@ function parseCertificateRows(
     "event",
     "activity",
   ]);
+  const recognitionRoleIndex = getFirstHeadingIndex(headers, [
+    "role",
+    "post",
+    "office",
+    "responsibility",
+  ]);
+  const recognitionRoleOtherIndex = getFirstHeadingIndex(headers, [
+    "role other",
+    "other role",
+    "role specify",
+    "specify role",
+  ]);
+  const recognitionBodyTypeIndex = getFirstHeadingIndex(headers, [
+    "body type",
+    "organisation type",
+    "organization type",
+    "club/society/committee/association",
+    "body",
+  ]);
+  const recognitionBodyOtherIndex = getFirstHeadingIndex(headers, [
+    "body other",
+    "other body",
+    "body specify",
+    "specify body",
+    "organisation other",
+    "organization other",
+  ]);
+  const recognitionBodyNameIndex = getFirstHeadingIndex(headers, [
+    "body name",
+    "club name",
+    "society name",
+    "committee name",
+    "association name",
+    "council name",
+    "organisation name",
+    "organization name",
+    "club/society name",
+  ]);
+  const recognitionAcademicYearIndex = getFirstHeadingIndex(headers, [
+    "academic year",
+    "academic session",
+    "year",
+  ]);
+  const recognitionTermIndex = getFirstHeadingIndex(headers, [
+    "term",
+    "term of years",
+    "duration",
+    "period",
+  ]);
 
-  if (letterIdIndex < 0 || studentNameIndex < 0 || classIndex < 0) {
+  if (letterIdIndex < 0 || studentNameIndex < 0) {
     throw new SheetsConfigurationError();
   }
 
@@ -766,11 +873,11 @@ function parseCertificateRows(
     }
 
     const studentName = row[studentNameIndex]?.trim();
-    const classValue = row[classIndex]?.trim();
+    const classValue = classIndex >= 0 ? row[classIndex]?.trim() : "";
     const branchValue = branchIndex >= 0 ? row[branchIndex]?.trim() : "";
-    const className = branchValue ? `${classValue} ${branchValue}` : classValue;
+    const className = [classValue, branchValue].filter(Boolean).join(" ");
 
-    if (!studentName || !className) {
+    if (!studentName) {
       throw new SheetsConfigurationError();
     }
 
@@ -789,10 +896,40 @@ function parseCertificateRows(
       studentName,
       className,
     };
+    const recipientType =
+      recipientTypeIndex >= 0 ? row[recipientTypeIndex]?.trim() : "";
     const meritRank =
       meritRankIndex >= 0 ? row[meritRankIndex]?.trim() : "";
     const meritCategory =
       meritCategoryIndex >= 0 ? row[meritCategoryIndex]?.trim() : "";
+    const recognitionRole =
+      recognitionRoleIndex >= 0 ? row[recognitionRoleIndex]?.trim() : "";
+    const recognitionRoleOther =
+      recognitionRoleOtherIndex >= 0
+        ? row[recognitionRoleOtherIndex]?.trim()
+        : "";
+    const recognitionBodyType =
+      recognitionBodyTypeIndex >= 0
+        ? row[recognitionBodyTypeIndex]?.trim()
+        : "";
+    const recognitionBodyOther =
+      recognitionBodyOtherIndex >= 0
+        ? row[recognitionBodyOtherIndex]?.trim()
+        : "";
+    const recognitionBodyName =
+      recognitionBodyNameIndex >= 0
+        ? row[recognitionBodyNameIndex]?.trim()
+        : "";
+    const recognitionAcademicYear =
+      recognitionAcademicYearIndex >= 0
+        ? row[recognitionAcademicYearIndex]?.trim()
+        : "";
+    const recognitionTerm =
+      recognitionTermIndex >= 0 ? row[recognitionTermIndex]?.trim() : "";
+
+    if (recipientType) {
+      certificate.recipientType = recipientType;
+    }
 
     if (meritRank) {
       certificate.meritRank = meritRank;
@@ -800,6 +937,32 @@ function parseCertificateRows(
 
     if (meritCategory) {
       certificate.meritCategory = meritCategory;
+    }
+
+    if (recognitionRole || recognitionRoleOther) {
+      certificate.recognitionRole =
+        isOtherChoice(recognitionRole)
+          ? recognitionRoleOther || recognitionRole
+          : recognitionRole || recognitionRoleOther;
+    }
+
+    if (recognitionBodyType || recognitionBodyOther) {
+      certificate.recognitionBodyType =
+        isOtherChoice(recognitionBodyType)
+          ? recognitionBodyOther || recognitionBodyType
+          : recognitionBodyType || recognitionBodyOther;
+    }
+
+    if (recognitionBodyName) {
+      certificate.recognitionBodyName = recognitionBodyName;
+    }
+
+    if (recognitionAcademicYear) {
+      certificate.recognitionAcademicYear = recognitionAcademicYear;
+    }
+
+    if (recognitionTerm) {
+      certificate.recognitionTerm = recognitionTerm;
     }
 
     return {

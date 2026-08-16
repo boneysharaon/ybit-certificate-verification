@@ -2,8 +2,14 @@ export type CertificateRecord = {
   letterId: string;
   studentName: string;
   className: string;
+  recipientType?: string;
   meritRank?: string;
   meritCategory?: string;
+  recognitionRole?: string;
+  recognitionBodyType?: string;
+  recognitionBodyName?: string;
+  recognitionAcademicYear?: string;
+  recognitionTerm?: string;
 };
 
 export type CertificateLookupResult =

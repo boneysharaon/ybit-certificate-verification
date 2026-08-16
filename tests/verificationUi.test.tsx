@@ -75,6 +75,43 @@ describe("verification UI", () => {
     expect(screen.getByText("First Position")).toBeInTheDocument();
   });
 
+  it("renders Recognition certificates without an event date", () => {
+    render(
+      <VerificationCertificate
+        event={{
+          ...event,
+          certificateType: "Recognition",
+          eventName: "Nature Club Recognition",
+          eventDate: "",
+          letterTitle: "CERTIFICATE OF RECOGNITION",
+          letterBody: [
+            "This is to certify that {{recipientName}}, {{recipientContext}}, rendered dedicated service as {{recognitionRole}} of {{recognitionBodyName}} {{recognitionBodyType}} for the academic year {{recognitionAcademicYear}}{{recognitionTermText}}.",
+          ],
+        }}
+        certificate={{
+          letterId: "YBIT/Club/NC/R/001",
+          studentName: "Prof. Asha Patil",
+          className: "",
+          recipientType: "Faculty",
+          recognitionRole: "Convenor",
+          recognitionBodyType: "Club",
+          recognitionBodyName: "Nature",
+          recognitionAcademicYear: "2025-26",
+          recognitionTerm: "Term I",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("CERTIFICATE OF RECOGNITION")).toBeInTheDocument();
+    expect(screen.getByText("Recipient Name")).toBeInTheDocument();
+    expect(screen.getAllByText("Prof. Asha Patil").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Convenor").length).toBeGreaterThan(0);
+    expect(screen.getByText("Nature Club")).toBeInTheDocument();
+    expect(screen.getAllByText("2025-26").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Term I").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Event Date")).not.toBeInTheDocument();
+  });
+
   it("shows the not-found message for a valid but nonexistent ID", async () => {
     vi.stubGlobal(
       "fetch",

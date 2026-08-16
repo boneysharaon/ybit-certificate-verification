@@ -339,6 +339,8 @@ export default function AdminEventsEditor({
     replaceSelected({
       ...selectedEvent,
       certificateType,
+      eventDate:
+        certificateType === "Recognition" ? "" : selectedEvent.eventDate,
       letterTitle: getDefaultLetterTitleForCertificateType(certificateType),
       letterBody: getDefaultLetterBodyForCertificateType(certificateType),
     });
@@ -592,6 +594,7 @@ export default function AdminEventsEditor({
                 <option>Appreciation</option>
                 <option>Participation</option>
                 <option>Merit</option>
+                <option>Recognition</option>
               </select>
             </label>
             {selectedEvent.certificateType === "Merit" ? (
@@ -688,13 +691,17 @@ export default function AdminEventsEditor({
                 }
               />
             </label>
-            <label>
-              <span>Event Date</span>
-              <input
-                value={selectedEvent.eventDate}
-                onChange={(event) => updateField("eventDate", event.target.value)}
-              />
-            </label>
+            {selectedEvent.certificateType !== "Recognition" ? (
+              <label>
+                <span>Event Date</span>
+                <input
+                  value={selectedEvent.eventDate}
+                  onChange={(event) =>
+                    updateField("eventDate", event.target.value)
+                  }
+                />
+              </label>
+            ) : null}
             <label>
               <span>Issue Date</span>
               <input

@@ -20,7 +20,7 @@ Use one private Google Sheet for the whole portal.
 
 The current Youth Festival 2026 volunteer eCertificates use the first certificate-data tab named `Certificates`.
 
-Required headings:
+Standard student certificate-data tabs use these headings:
 
 | Column | Heading |
 | --- | --- |
@@ -40,6 +40,8 @@ Optional heading:
 Blank Status or `Valid` is treated as valid. `Revoked` is treated as revoked.
 If `Branch` is present, the public verification document displays `Class` and `Branch` together, such as `T.E. Computer Science Engineering`.
 For Certificate of Merit events, add a rank/result column such as `Rank`, `Position`, `Prize`, `Award`, or `Result`, and a category column such as `Event/Category`, `Category`, `Competition`, or `Event`.
+
+Certificate of Recognition tabs are generated with `Letter ID`, `Recipient Type`, `Recipient Name`, `Class`, `Branch`, `Role`, `Role Other`, `Body Type`, `Body Other`, `Body Name`, `Academic Year`, `Term`, and `Status`. Use `Recipient Type` as `Student` or `Faculty`. `Class` and `Branch` can be left blank for faculty members. Choose `Other` / `Any other (Specify)` in `Role` or `Body Type`, then fill the matching `Role Other` or `Body Other` column.
 
 Example row:
 
@@ -79,7 +81,7 @@ The `Events` tab has these columns:
 | X | Merit Award Term |
 
 Only rows with `Status` set to `Published` appear on the public homepage. `Draft` and `Archived` rows stay hidden.
-`Certificate Type` can be `Appreciation`, `Participation`, or `Merit`. For Merit certificates, `Merit Award Term` can be `Rank`, `Position`, or `Prize`.
+`Certificate Type` can be `Appreciation`, `Participation`, `Merit`, or `Recognition`. For Merit certificates, `Merit Award Term` can be `Rank`, `Position`, or `Prize`.
 
 For editable letter text, use placeholders:
 
@@ -93,6 +95,15 @@ For editable letter text, use placeholders:
 {{meritRank}}
 {{meritAwardTerm}}
 {{meritCategory}}
+{{recipientName}}
+{{recipientType}}
+{{recipientContext}}
+{{recognitionRole}}
+{{recognitionBodyType}}
+{{recognitionBodyName}}
+{{recognitionAcademicYear}}
+{{recognitionTerm}}
+{{recognitionTermText}}
 ```
 
 ## Enable Google Sheets API
@@ -151,7 +162,7 @@ To add another event:
 3. Set `Status` to `Published` when the public link should appear.
 4. Click `Save Event`.
 
-On save, the portal writes the row in the `Events` tab and automatically creates or updates the matching certificate-data tab. Appreciation and Participation tabs get `Letter ID`, `Student Name`, `Class`, `Branch`, and `Status`. Merit tabs also get the selected `Rank` / `Position` / `Prize` column and `Event/Category`.
+On save, the portal writes the row in the `Events` tab and automatically creates or updates the matching certificate-data tab. Appreciation and Participation tabs get `Letter ID`, `Student Name`, `Class`, `Branch`, and `Status`. Merit tabs also get the selected `Rank` / `Position` / `Prize` column and `Event/Category`. Recognition tabs get recipient, role, organisation/body, academic-year, optional-term, and status columns.
 
 If you manage the sheet manually, the same headings can still be edited directly in Google Sheets. Existing certificate-data rows are preserved when `/admin` updates the header row.
 
@@ -169,7 +180,7 @@ Admin access uses Google sign-in. Only emails listed in `ADMIN_EMAILS` are allow
 
 The editor can upload a custom signature image for each signatory. Uploads are processed in the browser before saving: the image is cropped to the signature ink, light paper background is made transparent, and the result is compressed before being stored in the `Events` tab. The public certificate renders the cleaned signature with transparent/multiply styling so it does not look like a pasted photo.
 
-Each event also has a `Certificate Type` dropdown. `Appreciation` and `Participation` use the same editable fields. `Merit` switches the default title/body to a merit certificate and uses per-student rank/category values from the certificate-data tab.
+Each event also has a `Certificate Type` dropdown. `Appreciation` and `Participation` use the same editable fields. `Merit` switches the default title/body to a merit certificate and uses per-student rank/category values from the certificate-data tab. `Recognition` switches to a service/office-bearer certificate, removes Event Date from the editor, and uses recipient type, role, body, academic year, and optional term values from the certificate-data tab.
 
 Create a Google OAuth web client in the same Google Cloud project and add this authorized redirect URI:
 

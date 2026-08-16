@@ -146,11 +146,14 @@ Events are managed from the Google Sheet, not by editing code.
 
 To add another event:
 
-1. Add a new tab in the same Google Sheet with the same headings.
-2. Add a row in the `Events` tab.
-3. Set `Sheet Tab Name` to the exact certificate-data tab name.
-4. Set `Certificate Prefix`, `ID Digits`, event name, dates and page text.
-5. Set `Status` to `Published` when the public link should appear.
+1. Open `/admin` and click `Add Event`.
+2. Fill the event form and choose the certificate type.
+3. Set `Status` to `Published` when the public link should appear.
+4. Click `Save Event`.
+
+On save, the portal writes the row in the `Events` tab and automatically creates or updates the matching certificate-data tab. Appreciation and Participation tabs get `Letter ID`, `Student Name`, `Class`, `Branch`, and `Status`. Merit tabs also get the selected `Rank` / `Position` / `Prize` column and `Event/Category`.
+
+If you manage the sheet manually, the same headings can still be edited directly in Google Sheets. Existing certificate-data rows are preserved when `/admin` updates the header row.
 
 The QR code is generated dynamically at `/api/qr/<event-slug>`.
 

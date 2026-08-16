@@ -139,6 +139,14 @@ function normaliseCell(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function assertValidSheetTabName(value: string) {
+  if (value.length > 100 || /[:\\/?*\[\]]/.test(value)) {
+    throw new Error(
+      "Sheet Tab Name must be 100 characters or fewer and cannot contain : \\ / ? * [ or ].",
+    );
+  }
+}
+
 function parsePositiveInteger(value: unknown, fallback: number) {
   const parsed = Number.parseInt(normaliseCell(value), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -280,6 +288,19 @@ export function getDefaultLetterBodyForCertificateType(
   }
 
   return [...DEFAULT_LETTER_BODY];
+}
+
+export function getCertificateDataHeaders(event: Pick<
+  CertificateEvent,
+  "certificateType" | "meritAwardTerm"
+>) {
+  const baseHeaders = ["Letter ID", "Student Name", "Class", "Branch"];
+
+  if (event.certificateType === "Merit") {
+    return [...baseHeaders, event.meritAwardTerm, "Event/Category", "Status"];
+  }
+
+  return [...baseHeaders, "Status"];
 }
 
 function normaliseSignatureSource(value: unknown, fallback: string) {
@@ -472,6 +493,8 @@ export function normaliseCertificateEvent(input: unknown): CertificateEvent {
       "Event Name, Slug, Sheet Tab Name and Certificate Prefix are required.",
     );
   }
+
+  assertValidSheetTabName(sheetTabName);
 
   const signatoriesInput = Array.isArray(
     (body as Record<string, unknown>).signatories,

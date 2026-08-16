@@ -4,6 +4,7 @@ import {
   EVENTS_SHEET_NAME,
   eventToSheetRow,
   fallbackCertificateEvents,
+  getCertificateDataHeaders,
   getCertificateEventFromList,
   normaliseCertificateEvent,
   sheetRowToEvent,
@@ -303,11 +304,225 @@ async function getSpreadsheetMetadata() {
 }
 
 function getEventsSheet(metadata: SpreadsheetMetadataResponse) {
+  return getSheetByTitle(metadata, EVENTS_SHEET_NAME);
+}
+
+function getSheetByTitle(metadata: SpreadsheetMetadataResponse, title: string) {
   return (
     metadata.sheets?.find(
-      (sheet) => sheet.properties?.title === EVENTS_SHEET_NAME,
+      (sheet) => sheet.properties?.title === title,
     )?.properties ?? null
   );
+}
+
+function hasHeading(headers: string[], heading: string) {
+  return headers.some(
+    (existingHeading) =>
+      existingHeading.trim().toLowerCase() === heading.trim().toLowerCase(),
+  );
+}
+
+function mergeHeaderRow(existingHeaders: string[], requiredHeaders: string[]) {
+  const headers = existingHeaders.map((header) => header.trim());
+
+  if (headers.every((header) => !header)) {
+    return requiredHeaders;
+  }
+
+  for (const requiredHeader of requiredHeaders) {
+    if (!hasHeading(headers, requiredHeader)) {
+      headers.push(requiredHeader);
+    }
+  }
+
+  return headers;
+}
+
+function validationRequest(
+  sheetId: number,
+  columnIndex: number,
+  values: string[],
+  strict = false,
+) {
+  return {
+    setDataValidation: {
+      range: {
+        sheetId,
+        startRowIndex: 1,
+        endRowIndex: 1000,
+        startColumnIndex: columnIndex,
+        endColumnIndex: columnIndex + 1,
+      },
+      rule: {
+        condition: {
+          type: "ONE_OF_LIST",
+          values: values.map((userEnteredValue) => ({ userEnteredValue })),
+        },
+        strict,
+        showCustomUi: true,
+      },
+    },
+  };
+}
+
+async function formatCertificateDataSheet(sheetId: number, headers: string[]) {
+  const statusColumnIndex = getHeadingIndex(headers, "status");
+  const meritColumnIndex = getFirstHeadingIndex(headers, [
+    "rank",
+    "position",
+    "prize",
+  ]);
+  const requests: Record<string, unknown>[] = [
+    {
+      repeatCell: {
+        range: {
+          sheetId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: headers.length,
+        },
+        cell: {
+          userEnteredFormat: {
+            backgroundColorStyle: {
+              rgbColor: {
+                red: 0.06,
+                green: 0.36,
+                blue: 0.31,
+              },
+            },
+            textFormat: {
+              bold: true,
+              foregroundColorStyle: {
+                rgbColor: {
+                  red: 1,
+                  green: 1,
+                  blue: 1,
+                },
+              },
+            },
+            wrapStrategy: "WRAP",
+          },
+        },
+        fields:
+          "userEnteredFormat(backgroundColorStyle,textFormat,wrapStrategy)",
+      },
+    },
+    {
+      updateSheetProperties: {
+        properties: {
+          sheetId,
+          gridProperties: {
+            frozenRowCount: 1,
+          },
+        },
+        fields: "gridProperties.frozenRowCount",
+      },
+    },
+    {
+      autoResizeDimensions: {
+        dimensions: {
+          sheetId,
+          dimension: "COLUMNS",
+          startIndex: 0,
+          endIndex: headers.length,
+        },
+      },
+    },
+  ];
+
+  if (statusColumnIndex >= 0) {
+    requests.push(validationRequest(sheetId, statusColumnIndex, ["Valid", "Revoked"]));
+  }
+
+  if (meritColumnIndex >= 0) {
+    requests.push(
+      validationRequest(
+        sheetId,
+        meritColumnIndex,
+        ["First", "Second", "Third", "Consolation"],
+        false,
+      ),
+    );
+  }
+
+  await batchUpdate(requests);
+}
+
+export async function ensureCertificateDataSheet(event: CertificateEvent) {
+  const requiredHeaders = getCertificateDataHeaders(event);
+  const lastColumn = spreadsheetColumnName(Math.max(requiredHeaders.length, 1));
+  let metadata = await getSpreadsheetMetadata();
+  let dataSheet = getSheetByTitle(metadata, event.sheetTabName);
+
+  if (!dataSheet?.sheetId) {
+    await batchUpdate([
+      {
+        addSheet: {
+          properties: {
+            title: event.sheetTabName,
+            gridProperties: {
+              rowCount: 1000,
+              columnCount: requiredHeaders.length,
+            },
+          },
+        },
+      },
+    ]);
+    metadata = await getSpreadsheetMetadata();
+    dataSheet = getSheetByTitle(metadata, event.sheetTabName);
+  }
+
+  if (!dataSheet?.sheetId) {
+    throw new SheetsRequestError("Could not create the certificate data tab.");
+  }
+
+  if ((dataSheet.gridProperties?.columnCount ?? 0) < requiredHeaders.length) {
+    await batchUpdate([
+      {
+        updateSheetProperties: {
+          properties: {
+            sheetId: dataSheet.sheetId,
+            gridProperties: {
+              columnCount: requiredHeaders.length,
+            },
+          },
+          fields: "gridProperties.columnCount",
+        },
+      },
+    ]);
+  }
+
+  const existingHeaderRows = await readValues(event.sheetTabName, `A1:Z1`);
+  const mergedHeaders = mergeHeaderRow(existingHeaderRows[0] ?? [], requiredHeaders);
+  const mergedLastColumn = spreadsheetColumnName(mergedHeaders.length);
+
+  if ((dataSheet.gridProperties?.columnCount ?? 0) < mergedHeaders.length) {
+    await batchUpdate([
+      {
+        updateSheetProperties: {
+          properties: {
+            sheetId: dataSheet.sheetId,
+            gridProperties: {
+              columnCount: mergedHeaders.length,
+            },
+          },
+          fields: "gridProperties.columnCount",
+        },
+      },
+    ]);
+  }
+
+  await writeValues(event.sheetTabName, `A1:${mergedLastColumn}1`, [
+    mergedHeaders,
+  ]);
+  await formatCertificateDataSheet(dataSheet.sheetId, mergedHeaders);
+
+  return {
+    sheetId: dataSheet.sheetId,
+    headers: mergedHeaders,
+    createdOrUpdatedRange: `A1:${lastColumn}1`,
+  };
 }
 
 async function formatEventsSheet(sheetId: number) {
@@ -668,6 +883,7 @@ export async function upsertCertificateEvent(input: unknown) {
     `A${targetRowNumber}:${EVENTS_SHEET_LAST_COLUMN}${targetRowNumber}`,
     [eventToSheetRow(event)],
   );
+  await ensureCertificateDataSheet(event);
 
   return event;
 }

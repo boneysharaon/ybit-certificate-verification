@@ -24,6 +24,18 @@ const MAX_SIGNATURE_DATA_URL_LENGTH = 45_000;
 const SIGNATURE_OUTPUT_WIDTH = 520;
 const SIGNATURE_OUTPUT_HEIGHT = 190;
 
+function sheetTabNameFromEventName(value: string) {
+  return (
+    value
+      .trim()
+      .replace(/[:\\/?*\[\]]+/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/^'+|'+$/g, "")
+      .slice(0, 90)
+      .trim() || "New Event"
+  );
+}
+
 function cloneEvent(event: CertificateEvent): CertificateEvent {
   return {
     ...event,
@@ -39,14 +51,15 @@ function cloneEvent(event: CertificateEvent): CertificateEvent {
 function newDraftEvent() {
   const base = cloneEvent(getDefaultCertificateEvent());
   const stamp = Date.now().toString().slice(-5);
+  const eventName = "New Event";
   return {
     ...base,
-    eventName: "New Event",
+    eventName,
     slug: `new-event-${stamp}`,
     homeLinkLabel: "Verify New Event eCertificates",
     pageTitle: "New Event eCertificate Verification",
     pageDescription: `Enter only the final ID printed after ${base.certificateIdPrefix}.`,
-    sheetTabName: "New Event",
+    sheetTabName: `${sheetTabNameFromEventName(eventName)} ${stamp}`,
     eventDate: "",
     issueDate: "",
     status: "Draft",
@@ -306,10 +319,15 @@ export default function AdminEventsEditor({
     }
 
     const wasDefaultNewSlug = selectedEvent.slug.startsWith("new-event-");
+    const shouldUpdateSheetTabName =
+      wasDefaultNewSlug && selectedEvent.sheetTabName.startsWith("New Event");
     replaceSelected({
       ...selectedEvent,
       eventName: value,
       slug: wasDefaultNewSlug ? slugifyEventName(value) : selectedEvent.slug,
+      sheetTabName: shouldUpdateSheetTabName
+        ? sheetTabNameFromEventName(value)
+        : selectedEvent.sheetTabName,
     });
   }
 
@@ -445,7 +463,7 @@ export default function AdminEventsEditor({
       });
       setSelectedSlug(savedEvent.slug);
       setSaveState("saved");
-      setMessage("Saved to Google Sheets.");
+      setMessage("Saved to Google Sheets. Certificate data tab checked.");
     } catch (error) {
       setSaveState("error");
       setMessage(error instanceof Error ? error.message : "Could not save.");

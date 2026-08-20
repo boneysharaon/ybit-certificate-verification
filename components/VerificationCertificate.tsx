@@ -79,6 +79,10 @@ function clampTemplateOffset(value: number) {
   return Math.min(180, Math.max(-180, Math.round(value)));
 }
 
+function clampSignatureScale(value: number, max: number) {
+  return Math.min(max, Math.max(0.4, value));
+}
+
 type TemplateMoveSectionProps = {
   target: TemplateOffsetTarget;
   offsetX: number;
@@ -283,6 +287,12 @@ export default function VerificationCertificate({
   const documentStyle = {
     "--signatory-one-scale": String(event.signatoryOneScale),
     "--signatory-two-scale": String(event.signatoryTwoScale),
+    "--signatory-one-export-scale": String(
+      clampSignatureScale(event.signatoryOneScale, 0.82),
+    ),
+    "--signatory-two-export-scale": String(
+      clampSignatureScale(event.signatoryTwoScale, 0.62),
+    ),
   } as CSSProperties;
 
   const pdfFileName = certificatePdfFileName(certificate);

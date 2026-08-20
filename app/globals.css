@@ -1395,21 +1395,24 @@ body.pdf-export-mode .qr-frame {
 }
 
 body.pdf-export-mode .signatory-row {
-  margin-top: 18px;
+  gap: 40px;
+  margin-top: 14px;
 }
 
 body.pdf-export-mode .signatory {
-  min-height: 94px;
+  min-height: 76px;
 }
 
 body.pdf-export-mode .signature-image {
-  width: min(178px, 100%);
-  height: 58px;
+  width: min(158px, 100%);
+  height: 44px;
+  transform: scale(var(--signatory-one-export-scale, 0.72)) !important;
 }
 
 body.pdf-export-mode .signatory-right .signature-image {
-  height: 68px;
-  transform: scale(var(--signatory-two-scale, 0.82));
+  width: min(168px, 100%);
+  height: 50px;
+  transform: scale(var(--signatory-two-export-scale, 0.56)) !important;
 }
 
 body.pdf-export-mode .verification-footnote {
@@ -1579,21 +1582,23 @@ body.pdf-export-mode .verification-footnote {
 
   .signatory-row {
     gap: 10mm;
-    margin-top: 6mm;
+    margin-top: 4mm;
   }
 
   .signatory {
-    min-height: 22mm;
+    min-height: 17mm;
   }
 
   .signature-image {
-    width: 42mm;
-    height: 13mm;
+    width: 36mm;
+    height: 10mm;
+    transform: scale(var(--signatory-one-export-scale, 0.72)) !important;
   }
 
   .signatory-right .signature-image {
-    height: 16mm;
-    transform: scale(var(--signatory-two-scale, 0.82));
+    width: 40mm;
+    height: 12mm;
+    transform: scale(var(--signatory-two-export-scale, 0.56)) !important;
   }
 
   .signatory strong {

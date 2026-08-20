@@ -288,10 +288,10 @@ export default function VerificationCertificate({
     "--signatory-one-scale": String(event.signatoryOneScale),
     "--signatory-two-scale": String(event.signatoryTwoScale),
     "--signatory-one-export-scale": String(
-      clampSignatureScale(event.signatoryOneScale, 0.82),
+      clampSignatureScale(event.signatoryOneScale, 0.95),
     ),
     "--signatory-two-export-scale": String(
-      clampSignatureScale(event.signatoryTwoScale, 0.62),
+      clampSignatureScale(event.signatoryTwoScale, 0.9),
     ),
   } as CSSProperties;
 

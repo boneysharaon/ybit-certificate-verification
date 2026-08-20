@@ -355,6 +355,29 @@ function parseSignatureSource(value: unknown, fallback: string) {
   return isAllowedSignatureSource(signatureSrc) ? signatureSrc : fallback;
 }
 
+function isPrincipalSignatory(name: string, designation: string) {
+  const normalizedName = name.toLowerCase();
+  const normalizedDesignation = designation.toLowerCase();
+
+  return (
+    normalizedName.includes("raman") ||
+    normalizedName.includes("bane") ||
+    normalizedDesignation.includes("principal")
+  );
+}
+
+function resolvePrincipalSignatureSource(
+  name: string,
+  designation: string,
+  signatureSrc: string,
+) {
+  if (isPrincipalSignatory(name, designation) && signatureSrc.startsWith("data:image/")) {
+    return DEFAULT_SIGNATORIES[1].signatureSrc;
+  }
+
+  return signatureSrc;
+}
+
 function parseBoundedNumber(
   value: unknown,
   fallback: number,
@@ -562,6 +585,11 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
     getValue(headers, row, "Signatory 2 Signature Image"),
     DEFAULT_SIGNATORIES[1].signatureSrc,
   );
+  const resolvedSignatoryTwoSignatureSrc = resolvePrincipalSignatureSource(
+    signatoryTwoName,
+    signatoryTwoDesignation,
+    signatoryTwoSignatureSrc,
+  );
   const defaultEvent = fallbackCertificateEvents[0];
 
   return {
@@ -602,7 +630,7 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
         ...DEFAULT_SIGNATORIES[1],
         name: signatoryTwoName,
         designation: signatoryTwoDesignation,
-        signatureSrc: signatoryTwoSignatureSrc,
+        signatureSrc: resolvedSignatoryTwoSignatureSrc,
         signatureAlt: `Signature of ${signatoryTwoName}`,
       },
     ],

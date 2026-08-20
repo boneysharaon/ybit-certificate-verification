@@ -1232,7 +1232,7 @@ export default function AdminEventsEditor({
                           onChange={(event) =>
                             updateField(
                               "signatoryOneScale",
-                              clampSliderNumber(event.target.value, 1),
+                              clampSliderNumber(event.target.value, 0.88),
                             )
                           }
                         />
@@ -1251,7 +1251,7 @@ export default function AdminEventsEditor({
                           onChange={(event) =>
                             updateField(
                               "signatoryTwoScale",
-                              clampSliderNumber(event.target.value, 1.22),
+                              clampSliderNumber(event.target.value, 0.82),
                             )
                           }
                         />

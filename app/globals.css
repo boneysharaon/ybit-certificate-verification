@@ -633,13 +633,13 @@ input:focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 28px;
-  margin-top: 42px;
+  margin-top: 34px;
 }
 
 .signatory {
   display: grid;
   gap: 4px;
-  min-height: 166px;
+  min-height: 128px;
   align-content: end;
   color: var(--ink);
 }
@@ -650,23 +650,23 @@ input:focus-visible {
 
 .signature-image {
   display: block;
-  width: min(280px, 100%);
-  height: 118px;
+  width: min(220px, 100%);
+  height: 78px;
   object-fit: contain;
   object-position: left bottom;
   opacity: 0.94;
   filter: saturate(0.92) contrast(1.04);
   mix-blend-mode: multiply;
-  transform: scale(var(--signatory-one-scale, 1));
+  transform: scale(var(--signatory-one-scale, 0.88));
   transform-origin: left bottom;
 }
 
 .signatory-right .signature-image {
   margin-left: auto;
-  height: 158px;
+  height: 92px;
   object-position: right bottom;
   opacity: 0.98;
-  transform: scale(var(--signatory-two-scale, 1.22));
+  transform: scale(var(--signatory-two-scale, 0.82));
   transform-origin: right bottom;
 }
 
@@ -1395,21 +1395,21 @@ body.pdf-export-mode .qr-frame {
 }
 
 body.pdf-export-mode .signatory-row {
-  margin-top: 26px;
+  margin-top: 18px;
 }
 
 body.pdf-export-mode .signatory {
-  min-height: 132px;
+  min-height: 94px;
 }
 
 body.pdf-export-mode .signature-image {
-  width: min(240px, 100%);
-  height: 98px;
+  width: min(178px, 100%);
+  height: 58px;
 }
 
 body.pdf-export-mode .signatory-right .signature-image {
-  height: 135px;
-  transform: scale(var(--signatory-two-scale, 1.22));
+  height: 68px;
+  transform: scale(var(--signatory-two-scale, 0.82));
 }
 
 body.pdf-export-mode .verification-footnote {
@@ -1583,17 +1583,17 @@ body.pdf-export-mode .verification-footnote {
   }
 
   .signatory {
-    min-height: 31mm;
+    min-height: 22mm;
   }
 
   .signature-image {
-    width: 55mm;
-    height: 22mm;
+    width: 42mm;
+    height: 13mm;
   }
 
   .signatory-right .signature-image {
-    height: 28mm;
-    transform: scale(var(--signatory-two-scale, 1.22));
+    height: 16mm;
+    transform: scale(var(--signatory-two-scale, 0.82));
   }
 
   .signatory strong {

@@ -116,9 +116,14 @@ function isInkPixel(data: Uint8ClampedArray, index: number) {
   const minChannel = Math.min(red, green, blue);
   const maxChannel = Math.max(red, green, blue);
   const saturation = maxChannel - minChannel;
-  const blueInk = blue > red + 14 && blue > green + 2 && luminance < 220;
+  const blueDominance = blue - Math.max(red, green) * 0.82;
+  const blueInk =
+    luminance < 170 &&
+    saturation > 12 &&
+    (blue > red + 8 || blue > green + 4 || blueDominance > 12);
+  const darkInk = luminance < 105 && minChannel < 110 && maxChannel < 150;
 
-  return alpha > 18 && (luminance < 182 || blueInk) && minChannel < 205 && saturation > 8;
+  return alpha > 18 && minChannel < 185 && (blueInk || darkInk);
 }
 
 function findInkBounds(imageData: ImageData) {
@@ -235,7 +240,13 @@ async function processSignatureImage(file: File) {
       const green = sourceImageData.data[sourceIndex + 1] ?? 0;
       const blue = sourceImageData.data[sourceIndex + 2] ?? 0;
       const luminance = red * 0.299 + green * 0.587 + blue * 0.114;
-      const alpha = Math.min(255, Math.max(72, (205 - luminance) * 3.1));
+      const maxChannel = Math.max(red, green, blue);
+      const minChannel = Math.min(red, green, blue);
+      const saturation = maxChannel - minChannel;
+      const alpha = Math.min(
+        255,
+        Math.max(72, (185 - luminance) * 2.8 + saturation * 0.9),
+      );
 
       cleanedImageData.data[targetIndex] = Math.max(10, Math.min(48, red * 0.7));
       cleanedImageData.data[targetIndex + 1] = Math.max(
@@ -407,7 +418,7 @@ export default function AdminEventsEditor({
       const signatureSrc = await processSignatureImage(file);
       updateSignatoryImage(index, signatureSrc);
       setMessage(
-        "Signature cleaned and compressed. Click Save Event to publish this template change.",
+        "Signature background removed, cleaned and compressed. Click Save Event to publish this template change.",
       );
     } catch (error) {
       setSaveState("error");
@@ -759,7 +770,7 @@ export default function AdminEventsEditor({
                 <small>{signatureSizeLabel(selectedEvent.signatories[0].signatureSrc)}</small>
                 <div className="admin-signature-actions">
                   <label className="secondary-action-button admin-upload-button">
-                    {uploadingSignature === 0 ? "Cleaning..." : "Upload Signature"}
+                    {uploadingSignature === 0 ? "Cleaning..." : "Upload & Clean"}
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
@@ -809,7 +820,7 @@ export default function AdminEventsEditor({
                 <small>{signatureSizeLabel(selectedEvent.signatories[1].signatureSrc)}</small>
                 <div className="admin-signature-actions">
                   <label className="secondary-action-button admin-upload-button">
-                    {uploadingSignature === 1 ? "Cleaning..." : "Upload Signature"}
+                    {uploadingSignature === 1 ? "Cleaning..." : "Upload & Clean"}
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"

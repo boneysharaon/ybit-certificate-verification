@@ -388,6 +388,31 @@ input:focus-visible {
   padding: 36px;
 }
 
+.verification-document-landscape {
+  max-width: 1120px;
+}
+
+.certificate-theme-formal {
+  --accent: #5a2f36;
+  --accent-deep: #342026;
+  --accent-soft: #f8eeee;
+  --gold: #8f6d2e;
+}
+
+.certificate-theme-modern {
+  --accent: #006b70;
+  --accent-deep: #003d40;
+  --accent-soft: #e7f5f3;
+  --gold: #a5762c;
+}
+
+.certificate-theme-celebration {
+  --accent: #11613f;
+  --accent-deep: #0c3d2a;
+  --accent-soft: #eef6e7;
+  --gold: #b58a35;
+}
+
 .verification-document .institutional-header {
   grid-template-columns: 78px minmax(0, 1fr) 78px;
   gap: 14px;
@@ -451,6 +476,10 @@ input:focus-visible {
   background: var(--surface-muted);
 }
 
+.verification-document-landscape .document-meta-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .document-meta-grid div {
   display: grid;
   gap: 3px;
@@ -474,6 +503,47 @@ input:focus-visible {
   color: var(--ink);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.12rem;
+}
+
+.verification-document-landscape .letter-body {
+  font-size: 1.03rem;
+}
+
+.template-move-section {
+  position: relative;
+  will-change: transform;
+}
+
+.template-move-section-editable {
+  outline: 1px dashed rgba(15, 91, 79, 0.32);
+  outline-offset: 6px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.template-move-section-dragging {
+  outline-color: var(--gold);
+  cursor: grabbing;
+}
+
+.template-drag-handle {
+  position: absolute;
+  top: -24px;
+  right: 0;
+  z-index: 2;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--accent-deep);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.letter-title-block,
+.letter-body-paragraphs {
+  display: block;
 }
 
 .letter-title,
@@ -587,6 +657,8 @@ input:focus-visible {
   opacity: 0.94;
   filter: saturate(0.92) contrast(1.04);
   mix-blend-mode: multiply;
+  transform: scale(var(--signatory-one-scale, 1));
+  transform-origin: left bottom;
 }
 
 .signatory-right .signature-image {
@@ -594,7 +666,7 @@ input:focus-visible {
   height: 158px;
   object-position: right bottom;
   opacity: 0.98;
-  transform: scale(1.22);
+  transform: scale(var(--signatory-two-scale, 1.22));
   transform-origin: right bottom;
 }
 
@@ -781,6 +853,7 @@ input:focus-visible {
   .signatory-right .signature-image {
     margin-left: 0;
     object-position: left bottom;
+    transform-origin: left bottom;
   }
 
   .letter-body {
@@ -1042,14 +1115,181 @@ input:focus-visible {
   opacity: 0;
 }
 
+.admin-empty-preview {
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.advanced-template-panel {
+  display: grid;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.advanced-template-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: #fbfcfc;
+}
+
+.advanced-template-heading h2 {
+  margin: 0;
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.28rem;
+}
+
+.advanced-template-heading p:not(.admin-eyebrow) {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+}
+
+.advanced-template-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.advanced-template-controls {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.advanced-control-group {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+
+.advanced-control-group h3 {
+  margin: 0;
+  color: var(--accent-deep);
+  font-size: 1rem;
+}
+
+.admin-grid-compact {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.admin-template-image-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-template-image-card {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-logo-preview {
+  display: grid;
+  width: 104px;
+  min-height: 104px;
+  place-items: center;
+  border: 1px dashed #b9c8c4;
+  background: #ffffff;
+}
+
+.admin-logo-preview img {
+  display: block;
+  width: 86px;
+  height: 86px;
+  object-fit: contain;
+}
+
+.range-field {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.range-field span {
+  grid-column: 1 / -1;
+}
+
+.range-field input {
+  min-height: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.range-field output {
+  min-width: 56px;
+  color: var(--accent-deep);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.advanced-preview-panel {
+  min-width: 0;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(45deg, #eef3f1 25%, transparent 25%),
+    linear-gradient(-45deg, #eef3f1 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eef3f1 75%),
+    linear-gradient(-45deg, transparent 75%, #eef3f1 75%),
+    #f9fbfa;
+  background-position:
+    0 0,
+    0 14px,
+    14px -14px,
+    -14px 0;
+  background-size: 28px 28px;
+}
+
+.advanced-preview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.advanced-preview-heading strong {
+  color: var(--accent-deep);
+}
+
+.advanced-preview-heading small {
+  max-width: 210px;
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.advanced-preview-panel .certificate-output {
+  display: block;
+}
+
+.advanced-preview-panel .verification-document {
+  margin: 0;
+  box-shadow: 0 12px 30px rgba(15, 91, 79, 0.14);
+}
+
 @media (max-width: 900px) {
   .admin-toolbar,
-  .admin-editor-heading {
+  .admin-editor-heading,
+  .advanced-template-heading {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .admin-layout {
+  .admin-layout,
+  .advanced-template-body {
     grid-template-columns: 1fr;
   }
 
@@ -1062,7 +1302,8 @@ input:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .admin-signature-card {
+  .admin-signature-card,
+  .admin-template-image-card {
     grid-template-columns: 1fr;
   }
 }
@@ -1085,6 +1326,12 @@ body.pdf-export-mode .verification-document {
   padding: 34px 42px;
   border: 1px solid var(--border);
   box-shadow: none;
+}
+
+body.pdf-export-mode .verification-document-landscape {
+  width: 1123px;
+  min-height: 794px;
+  padding: 30px 40px;
 }
 
 body.pdf-export-mode .verification-document .institutional-header {
@@ -1119,9 +1366,18 @@ body.pdf-export-mode .document-meta-grid {
   padding: 14px;
 }
 
+body.pdf-export-mode .verification-document-landscape .document-meta-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 14px 0 18px;
+}
+
 body.pdf-export-mode .letter-body {
   font-size: 17px;
   line-height: 1.42;
+}
+
+body.pdf-export-mode .verification-document-landscape .letter-body {
+  font-size: 15px;
 }
 
 body.pdf-export-mode .letter-body p {
@@ -1153,7 +1409,7 @@ body.pdf-export-mode .signature-image {
 
 body.pdf-export-mode .signatory-right .signature-image {
   height: 135px;
-  transform: scale(1.18);
+  transform: scale(var(--signatory-two-scale, 1.22));
 }
 
 body.pdf-export-mode .verification-footnote {
@@ -1163,7 +1419,7 @@ body.pdf-export-mode .verification-footnote {
 
 @media print {
   @page {
-    size: A4 portrait;
+    size: A4;
     margin: 0;
   }
 
@@ -1197,6 +1453,11 @@ body.pdf-export-mode .verification-footnote {
     margin: 0;
   }
 
+  body.certificate-print-landscape,
+  body.certificate-print-landscape .certificate-output {
+    width: 297mm;
+  }
+
   .no-print,
   .no-print *,
   .online-only,
@@ -1216,6 +1477,12 @@ body.pdf-export-mode .verification-footnote {
     break-inside: avoid;
     page-break-after: avoid;
     page-break-inside: avoid;
+  }
+
+  body.certificate-print-landscape .verification-document-landscape {
+    width: 297mm;
+    min-height: 210mm;
+    padding: 6mm 8mm;
   }
 
   .verification-document .institutional-header {
@@ -1253,6 +1520,11 @@ body.pdf-export-mode .verification-footnote {
     padding: 4mm;
   }
 
+  body.certificate-print-landscape .document-meta-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 4mm 0;
+  }
+
   .document-meta-grid span {
     font-size: 7.3pt;
   }
@@ -1273,6 +1545,10 @@ body.pdf-export-mode .verification-footnote {
   .letter-body {
     font-size: 11pt;
     line-height: 1.38;
+  }
+
+  body.certificate-print-landscape .letter-body {
+    font-size: 9.8pt;
   }
 
   .letter-body p {
@@ -1317,7 +1593,7 @@ body.pdf-export-mode .verification-footnote {
 
   .signatory-right .signature-image {
     height: 28mm;
-    transform: scale(1.18);
+    transform: scale(var(--signatory-two-scale, 1.22));
   }
 
   .signatory strong {

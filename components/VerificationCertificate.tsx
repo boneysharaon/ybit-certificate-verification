@@ -1,15 +1,32 @@
 "use client";
 
 import Image from "next/image";
-import type { ReactNode } from "react";
+import type {
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
+  ReactNode,
+} from "react";
 import { useRef, useState } from "react";
 import InstitutionalHeader from "@/components/InstitutionalHeader";
-import type { CertificateEvent } from "@/lib/certificateEvents";
+import {
+  REMOVED_IMAGE_SOURCE,
+  type CertificateEvent,
+} from "@/lib/certificateEvents";
 import type { CertificateRecord } from "@/lib/types";
+
+export type TemplateOffsetTarget = "title" | "body" | "qr";
 
 type VerificationCertificateProps = {
   certificate: CertificateRecord;
   event: CertificateEvent;
+  showActions?: boolean;
+  templateEdit?: {
+    onOffsetChange: (
+      target: TemplateOffsetTarget,
+      nextX: number,
+      nextY: number,
+    ) => void;
+  };
 };
 
 type SignatureImageProps = {
@@ -18,6 +35,10 @@ type SignatureImageProps = {
 };
 
 function SignatureImage({ src, alt }: SignatureImageProps) {
+  if (!src || src === REMOVED_IMAGE_SOURCE) {
+    return null;
+  }
+
   return (
     <Image
       src={src}
@@ -52,6 +73,109 @@ function waitForNextFrame() {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => resolve());
   });
+}
+
+function clampTemplateOffset(value: number) {
+  return Math.min(180, Math.max(-180, Math.round(value)));
+}
+
+type TemplateMoveSectionProps = {
+  target: TemplateOffsetTarget;
+  offsetX: number;
+  offsetY: number;
+  className: string;
+  children: ReactNode;
+  templateEdit?: VerificationCertificateProps["templateEdit"];
+};
+
+function TemplateMoveSection({
+  target,
+  offsetX,
+  offsetY,
+  className,
+  children,
+  templateEdit,
+}: TemplateMoveSectionProps) {
+  const dragRef = useRef<{
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    startOffsetX: number;
+    startOffsetY: number;
+  } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const classNames = [
+    className,
+    "template-move-section",
+    templateEdit ? "template-move-section-editable" : "",
+    isDragging ? "template-move-section-dragging" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const style = {
+    transform: `translate(${offsetX}px, ${offsetY}px)`,
+  } satisfies CSSProperties;
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!templateEdit) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startOffsetX: offsetX,
+      startOffsetY: offsetY,
+    };
+    setIsDragging(true);
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const dragStart = dragRef.current;
+
+    if (!templateEdit || !dragStart || dragStart.pointerId !== event.pointerId) {
+      return;
+    }
+
+    templateEdit.onOffsetChange(
+      target,
+      clampTemplateOffset(
+        dragStart.startOffsetX + event.clientX - dragStart.startClientX,
+      ),
+      clampTemplateOffset(
+        dragStart.startOffsetY + event.clientY - dragStart.startClientY,
+      ),
+    );
+  }
+
+  function handlePointerEnd(event: ReactPointerEvent<HTMLDivElement>) {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+      setIsDragging(false);
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  return (
+    <div
+      className={classNames}
+      style={style}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+    >
+      {children}
+      {templateEdit ? (
+        <span className="template-drag-handle no-print" aria-hidden="true">
+          Drag
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 function lowerTrimmed(value: string | undefined) {
@@ -140,21 +264,41 @@ function renderTemplateText(
 export default function VerificationCertificate({
   certificate,
   event,
+  showActions = true,
+  templateEdit,
 }: VerificationCertificateProps) {
   const certificateRef = useRef<HTMLElement>(null);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
   const isMerit = event.certificateType === "Merit";
   const isRecognition = event.certificateType === "Recognition";
   const recognitionBody = combineRecognitionBody(certificate);
+  const isLandscape = event.certificateOrientation === "Landscape";
+  const documentClassName = [
+    "verification-document",
+    isLandscape
+      ? "verification-document-landscape"
+      : "verification-document-portrait",
+    `certificate-theme-${event.certificateTheme.toLowerCase()}`,
+  ].join(" ");
+  const documentStyle = {
+    "--signatory-one-scale": String(event.signatoryOneScale),
+    "--signatory-two-scale": String(event.signatoryTwoScale),
+  } as CSSProperties;
 
   const pdfFileName = certificatePdfFileName(certificate);
 
   function handlePrint() {
     const previousTitle = document.title;
+    const printClass = isLandscape
+      ? "certificate-print-landscape"
+      : "certificate-print-portrait";
+
     document.title = pdfFileName.replace(/\.pdf$/i, "");
+    document.body.classList.add(printClass);
     window.print();
     window.setTimeout(() => {
       document.title = previousTitle;
+      document.body.classList.remove(printClass);
     }, 500);
   }
 
@@ -184,7 +328,7 @@ export default function VerificationCertificate({
       });
 
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
         format: "a4",
       });
@@ -218,26 +362,32 @@ export default function VerificationCertificate({
 
   return (
     <div className="certificate-output">
-      <div className="certificate-actions no-print" aria-label="Certificate actions">
-        <button type="button" className="secondary-action-button" onClick={handlePrint}>
-          Print Certificate
-        </button>
-        <button
-          type="button"
-          className="secondary-action-button"
-          disabled={isSavingPdf}
-          onClick={handleSavePdf}
-        >
-          {isSavingPdf ? "Preparing PDF..." : "Save to PDF"}
-        </button>
-      </div>
+      {showActions ? (
+        <div className="certificate-actions no-print" aria-label="Certificate actions">
+          <button type="button" className="secondary-action-button" onClick={handlePrint}>
+            Print Certificate
+          </button>
+          <button
+            type="button"
+            className="secondary-action-button"
+            disabled={isSavingPdf}
+            onClick={handleSavePdf}
+          >
+            {isSavingPdf ? "Preparing PDF..." : "Save to PDF"}
+          </button>
+        </div>
+      ) : null}
 
       <article
         ref={certificateRef}
-        className="verification-document"
+        className={documentClassName}
+        style={documentStyle}
         aria-labelledby="authentic-title"
       >
-        <InstitutionalHeader />
+        <InstitutionalHeader
+          leftLogoSrc={event.leftLogoSrc}
+          rightLogoSrc={event.rightLogoSrc}
+        />
 
         <div className="document-status document-status-valid online-only">
           <span aria-hidden="true" />
@@ -314,17 +464,39 @@ export default function VerificationCertificate({
         </div>
 
         <div className="letter-body">
-          <p className="letter-title">{event.letterTitle}</p>
-          <p className="concern-line">TO WHOMSOEVER IT MAY CONCERN</p>
+          <TemplateMoveSection
+            target="title"
+            offsetX={event.titleOffsetX}
+            offsetY={event.titleOffsetY}
+            className="letter-title-block"
+            templateEdit={templateEdit}
+          >
+            <p className="letter-title">{event.letterTitle}</p>
+            <p className="concern-line">TO WHOMSOEVER IT MAY CONCERN</p>
+          </TemplateMoveSection>
 
-          {event.letterBody.map((paragraph) => (
-            <p key={paragraph}>
-              {renderTemplateText(paragraph, certificate, event)}
-            </p>
-          ))}
+          <TemplateMoveSection
+            target="body"
+            offsetX={event.bodyOffsetX}
+            offsetY={event.bodyOffsetY}
+            className="letter-body-paragraphs"
+            templateEdit={templateEdit}
+          >
+            {event.letterBody.map((paragraph) => (
+              <p key={paragraph}>
+                {renderTemplateText(paragraph, certificate, event)}
+              </p>
+            ))}
+          </TemplateMoveSection>
         </div>
 
-        <div className="certificate-verification-qr">
+        <TemplateMoveSection
+          target="qr"
+          offsetX={event.qrOffsetX}
+          offsetY={event.qrOffsetY}
+          className="certificate-verification-qr"
+          templateEdit={templateEdit}
+        >
           <div className="qr-frame">
             <Image
               src={`/api/qr/${event.slug}`}
@@ -343,13 +515,19 @@ export default function VerificationCertificate({
               ))}
             </ol>
           </div>
-        </div>
+        </TemplateMoveSection>
 
         <div className="signatory-row">
           {event.signatories.map((signatory, index) => (
             <div
-              key={`${signatory.name}-${signatory.designation}`}
-              className={index === 1 ? "signatory signatory-right" : "signatory"}
+              key={`${index}-${signatory.name}-${signatory.designation}`}
+              className={[
+                "signatory",
+                index === 0 ? "signatory-one" : "signatory-two",
+                index === 1 ? "signatory-right" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               <SignatureImage
                 src={signatory.signatureSrc}

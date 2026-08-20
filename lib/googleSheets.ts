@@ -185,6 +185,11 @@ const EVENTS_CERTIFICATE_TYPE_COLUMN_INDEX =
   EVENTS_SHEET_HEADERS.indexOf("Certificate Type");
 const EVENTS_MERIT_AWARD_TERM_COLUMN_INDEX =
   EVENTS_SHEET_HEADERS.indexOf("Merit Award Term");
+const EVENTS_ORIENTATION_COLUMN_INDEX = EVENTS_SHEET_HEADERS.indexOf(
+  "Certificate Orientation",
+);
+const EVENTS_THEME_COLUMN_INDEX =
+  EVENTS_SHEET_HEADERS.indexOf("Certificate Theme");
 
 function spreadsheetUrl(config: SheetsConfig, path = "") {
   return `${GOOGLE_SHEETS_API_URL}/${encodeURIComponent(
@@ -683,6 +688,52 @@ async function formatEventsSheet(sheetId: number) {
               { userEnteredValue: "Rank" },
               { userEnteredValue: "Position" },
               { userEnteredValue: "Prize" },
+            ],
+          },
+          strict: true,
+          showCustomUi: true,
+        },
+      },
+    },
+    {
+      setDataValidation: {
+        range: {
+          sheetId,
+          startRowIndex: 1,
+          endRowIndex: 1000,
+          startColumnIndex: EVENTS_ORIENTATION_COLUMN_INDEX,
+          endColumnIndex: EVENTS_ORIENTATION_COLUMN_INDEX + 1,
+        },
+        rule: {
+          condition: {
+            type: "ONE_OF_LIST",
+            values: [
+              { userEnteredValue: "Portrait" },
+              { userEnteredValue: "Landscape" },
+            ],
+          },
+          strict: true,
+          showCustomUi: true,
+        },
+      },
+    },
+    {
+      setDataValidation: {
+        range: {
+          sheetId,
+          startRowIndex: 1,
+          endRowIndex: 1000,
+          startColumnIndex: EVENTS_THEME_COLUMN_INDEX,
+          endColumnIndex: EVENTS_THEME_COLUMN_INDEX + 1,
+        },
+        rule: {
+          condition: {
+            type: "ONE_OF_LIST",
+            values: [
+              { userEnteredValue: "Classic" },
+              { userEnteredValue: "Formal" },
+              { userEnteredValue: "Modern" },
+              { userEnteredValue: "Celebration" },
             ],
           },
           strict: true,

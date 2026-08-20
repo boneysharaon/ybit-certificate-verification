@@ -5,6 +5,12 @@ export type CertificateType =
   | "Merit"
   | "Recognition";
 export type MeritAwardTerm = "Rank" | "Position" | "Prize";
+export type CertificateOrientation = "Portrait" | "Landscape";
+export type CertificateTheme =
+  | "Classic"
+  | "Formal"
+  | "Modern"
+  | "Celebration";
 
 export type CertificateSignatory = {
   name: string;
@@ -32,6 +38,18 @@ export type CertificateEvent = {
   letterBody: string[];
   qrInstructions: string[];
   signatories: [CertificateSignatory, CertificateSignatory];
+  certificateOrientation: CertificateOrientation;
+  certificateTheme: CertificateTheme;
+  leftLogoSrc: string;
+  rightLogoSrc: string;
+  signatoryOneScale: number;
+  signatoryTwoScale: number;
+  titleOffsetX: number;
+  titleOffsetY: number;
+  bodyOffsetX: number;
+  bodyOffsetY: number;
+  qrOffsetX: number;
+  qrOffsetY: number;
   status: CertificateEventStatus;
 };
 
@@ -62,11 +80,33 @@ export const EVENTS_SHEET_HEADERS = [
   "Signatory 2 Signature Image",
   "Certificate Type",
   "Merit Award Term",
+  "Certificate Orientation",
+  "Certificate Theme",
+  "Left Logo Image",
+  "Right Logo Image",
+  "Signatory 1 Scale",
+  "Signatory 2 Scale",
+  "Title Offset X",
+  "Title Offset Y",
+  "Body Offset X",
+  "Body Offset Y",
+  "QR Offset X",
+  "QR Offset Y",
 ] as const;
 
 const MAX_SIGNATURE_DATA_URL_LENGTH = 48_000;
 const SIGNATURE_DATA_URL_PATTERN =
   /^data:image\/(?:png|jpeg|jpg|webp);base64,[a-z0-9+/=\s]+$/i;
+export const REMOVED_IMAGE_SOURCE = "none";
+export const DEFAULT_LEFT_LOGO_SRC = "/ybit-logo.png";
+export const DEFAULT_RIGHT_LOGO_SRC = "/mumbai-university-logo.png";
+export const certificateOrientations = ["Portrait", "Landscape"] as const;
+export const certificateThemes = [
+  "Classic",
+  "Formal",
+  "Modern",
+  "Celebration",
+] as const;
 
 const DEFAULT_LETTER_BODY = [
   "This is to place on record our sincere appreciation for {{studentName}}, a student of {{className}}, for volunteering during the {{eventName}} held at Yashwantrao Bhonsale Institute of Technology, Sawantwadi, on {{eventDate}}.",
@@ -131,6 +171,18 @@ export const fallbackCertificateEvents = [
     letterBody: DEFAULT_LETTER_BODY,
     qrInstructions: DEFAULT_QR_INSTRUCTIONS,
     signatories: DEFAULT_SIGNATORIES,
+    certificateOrientation: "Portrait",
+    certificateTheme: "Classic",
+    leftLogoSrc: DEFAULT_LEFT_LOGO_SRC,
+    rightLogoSrc: DEFAULT_RIGHT_LOGO_SRC,
+    signatoryOneScale: 1,
+    signatoryTwoScale: 1.22,
+    titleOffsetX: 0,
+    titleOffsetY: 0,
+    bodyOffsetX: 0,
+    bodyOffsetY: 0,
+    qrOffsetX: 0,
+    qrOffsetY: 0,
     status: "Published",
   },
 ] as const satisfies readonly CertificateEvent[];
@@ -213,6 +265,30 @@ function parseMeritAwardTerm(value: unknown): MeritAwardTerm {
   return "Prize";
 }
 
+function parseCertificateOrientation(value: unknown): CertificateOrientation {
+  return normaliseCell(value).toLowerCase() === "landscape"
+    ? "Landscape"
+    : "Portrait";
+}
+
+function parseCertificateTheme(value: unknown): CertificateTheme {
+  const normalised = normaliseCell(value).toLowerCase();
+
+  if (normalised === "formal") {
+    return "Formal";
+  }
+
+  if (normalised === "modern") {
+    return "Modern";
+  }
+
+  if (normalised === "celebration") {
+    return "Celebration";
+  }
+
+  return "Classic";
+}
+
 function splitParagraphs(value: unknown, fallback: string[]) {
   const text = normaliseCell(value);
 
@@ -262,6 +338,7 @@ function getValue(
 
 function isAllowedSignatureSource(value: string) {
   return (
+    value === REMOVED_IMAGE_SOURCE ||
     value.startsWith("/") ||
     (value.length <= MAX_SIGNATURE_DATA_URL_LENGTH &&
       SIGNATURE_DATA_URL_PATTERN.test(value))
@@ -276,6 +353,21 @@ function parseSignatureSource(value: unknown, fallback: string) {
   }
 
   return isAllowedSignatureSource(signatureSrc) ? signatureSrc : fallback;
+}
+
+function parseBoundedNumber(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+) {
+  const parsed = Number.parseFloat(normaliseCell(value));
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, parsed));
 }
 
 export function getDefaultLetterTitleForCertificateType(
@@ -396,6 +488,18 @@ export function eventToSheetRow(event: CertificateEvent) {
     event.signatories[1].signatureSrc,
     event.certificateType,
     event.meritAwardTerm,
+    event.certificateOrientation,
+    event.certificateTheme,
+    event.leftLogoSrc,
+    event.rightLogoSrc,
+    String(event.signatoryOneScale),
+    String(event.signatoryTwoScale),
+    String(event.titleOffsetX),
+    String(event.titleOffsetY),
+    String(event.bodyOffsetX),
+    String(event.bodyOffsetY),
+    String(event.qrOffsetX),
+    String(event.qrOffsetY),
   ];
 }
 
@@ -458,6 +562,7 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
     getValue(headers, row, "Signatory 2 Signature Image"),
     DEFAULT_SIGNATORIES[1].signatureSrc,
   );
+  const defaultEvent = fallbackCertificateEvents[0];
 
   return {
     slug,
@@ -501,6 +606,68 @@ export function sheetRowToEvent(headers: string[], row: string[]) {
         signatureAlt: `Signature of ${signatoryTwoName}`,
       },
     ],
+    certificateOrientation: parseCertificateOrientation(
+      getValue(headers, row, "Certificate Orientation"),
+    ),
+    certificateTheme: parseCertificateTheme(
+      getValue(headers, row, "Certificate Theme"),
+    ),
+    leftLogoSrc: parseSignatureSource(
+      getValue(headers, row, "Left Logo Image"),
+      defaultEvent.leftLogoSrc,
+    ),
+    rightLogoSrc: parseSignatureSource(
+      getValue(headers, row, "Right Logo Image"),
+      defaultEvent.rightLogoSrc,
+    ),
+    signatoryOneScale: parseBoundedNumber(
+      getValue(headers, row, "Signatory 1 Scale"),
+      defaultEvent.signatoryOneScale,
+      0.5,
+      2,
+    ),
+    signatoryTwoScale: parseBoundedNumber(
+      getValue(headers, row, "Signatory 2 Scale"),
+      defaultEvent.signatoryTwoScale,
+      0.5,
+      2,
+    ),
+    titleOffsetX: parseBoundedNumber(
+      getValue(headers, row, "Title Offset X"),
+      0,
+      -180,
+      180,
+    ),
+    titleOffsetY: parseBoundedNumber(
+      getValue(headers, row, "Title Offset Y"),
+      0,
+      -180,
+      180,
+    ),
+    bodyOffsetX: parseBoundedNumber(
+      getValue(headers, row, "Body Offset X"),
+      0,
+      -180,
+      180,
+    ),
+    bodyOffsetY: parseBoundedNumber(
+      getValue(headers, row, "Body Offset Y"),
+      0,
+      -180,
+      180,
+    ),
+    qrOffsetX: parseBoundedNumber(
+      getValue(headers, row, "QR Offset X"),
+      0,
+      -180,
+      180,
+    ),
+    qrOffsetY: parseBoundedNumber(
+      getValue(headers, row, "QR Offset Y"),
+      0,
+      -180,
+      180,
+    ),
     status: parseStatus(getValue(headers, row, "Status")),
   } satisfies CertificateEvent;
 }
@@ -529,6 +696,7 @@ export function normaliseCertificateEvent(input: unknown): CertificateEvent {
   const meritAwardTerm = parseMeritAwardTerm(
     (body as Record<string, unknown>).meritAwardTerm,
   );
+  const defaultEvent = fallbackCertificateEvents[0];
 
   if (!eventName || !slug || !sheetTabName || !certificateIdPrefix) {
     throw new Error(
@@ -611,6 +779,68 @@ export function normaliseCertificateEvent(input: unknown): CertificateEvent {
       ? qrInstructionsInput.map((value) => normaliseCell(value)).filter(Boolean)
       : splitLines(qrInstructionsInput, DEFAULT_QR_INSTRUCTIONS),
     signatories,
+    certificateOrientation: parseCertificateOrientation(
+      (body as Record<string, unknown>).certificateOrientation,
+    ),
+    certificateTheme: parseCertificateTheme(
+      (body as Record<string, unknown>).certificateTheme,
+    ),
+    leftLogoSrc: normaliseSignatureSource(
+      (body as Record<string, unknown>).leftLogoSrc,
+      defaultEvent.leftLogoSrc,
+    ),
+    rightLogoSrc: normaliseSignatureSource(
+      (body as Record<string, unknown>).rightLogoSrc,
+      defaultEvent.rightLogoSrc,
+    ),
+    signatoryOneScale: parseBoundedNumber(
+      (body as Record<string, unknown>).signatoryOneScale,
+      defaultEvent.signatoryOneScale,
+      0.5,
+      2,
+    ),
+    signatoryTwoScale: parseBoundedNumber(
+      (body as Record<string, unknown>).signatoryTwoScale,
+      defaultEvent.signatoryTwoScale,
+      0.5,
+      2,
+    ),
+    titleOffsetX: parseBoundedNumber(
+      (body as Record<string, unknown>).titleOffsetX,
+      0,
+      -180,
+      180,
+    ),
+    titleOffsetY: parseBoundedNumber(
+      (body as Record<string, unknown>).titleOffsetY,
+      0,
+      -180,
+      180,
+    ),
+    bodyOffsetX: parseBoundedNumber(
+      (body as Record<string, unknown>).bodyOffsetX,
+      0,
+      -180,
+      180,
+    ),
+    bodyOffsetY: parseBoundedNumber(
+      (body as Record<string, unknown>).bodyOffsetY,
+      0,
+      -180,
+      180,
+    ),
+    qrOffsetX: parseBoundedNumber(
+      (body as Record<string, unknown>).qrOffsetX,
+      0,
+      -180,
+      180,
+    ),
+    qrOffsetY: parseBoundedNumber(
+      (body as Record<string, unknown>).qrOffsetY,
+      0,
+      -180,
+      180,
+    ),
     status: parseStatus((body as Record<string, unknown>).status),
   };
 }

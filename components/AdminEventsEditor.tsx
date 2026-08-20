@@ -2,15 +2,26 @@
 
 import Image from "next/image";
 import { type ChangeEvent, useMemo, useState } from "react";
+import VerificationCertificate, {
+  type TemplateOffsetTarget,
+} from "@/components/VerificationCertificate";
 import {
+  DEFAULT_LEFT_LOGO_SRC,
+  DEFAULT_RIGHT_LOGO_SRC,
+  REMOVED_IMAGE_SOURCE,
+  certificateOrientations,
+  certificateThemes,
   getDefaultCertificateEvent,
   getDefaultLetterBodyForCertificateType,
   getDefaultLetterTitleForCertificateType,
   slugifyEventName,
   type CertificateEvent,
+  type CertificateOrientation,
+  type CertificateTheme,
   type CertificateType,
   type MeritAwardTerm,
 } from "@/lib/certificateEvents";
+import type { CertificateRecord } from "@/lib/types";
 
 type AdminEventsEditorProps = {
   initialEvents: CertificateEvent[];
@@ -23,6 +34,8 @@ const MAX_SIGNATURE_FILE_BYTES = 6 * 1024 * 1024;
 const MAX_SIGNATURE_DATA_URL_LENGTH = 45_000;
 const SIGNATURE_OUTPUT_WIDTH = 520;
 const SIGNATURE_OUTPUT_HEIGHT = 190;
+const LOGO_OUTPUT_SIZE = 260;
+const LOGO_OUTPUT_MAX_LENGTH = 45_000;
 
 function sheetTabNameFromEventName(value: string) {
   return (
@@ -190,6 +203,25 @@ function encodeCompressedSignature(source: HTMLCanvasElement) {
   throw new Error("The signature image is still too large after compression.");
 }
 
+function encodeCompressedLogo(source: HTMLCanvasElement) {
+  const sizes = [LOGO_OUTPUT_SIZE, 220, 180, 150, 120];
+  const qualities = [0.9, 0.8, 0.68, 0.56, 0.46];
+
+  for (const size of sizes) {
+    const canvas = resizeCanvas(source, size, size);
+
+    for (const quality of qualities) {
+      const dataUrl = canvas.toDataURL("image/webp", quality);
+
+      if (dataUrl.length <= LOGO_OUTPUT_MAX_LENGTH) {
+        return dataUrl;
+      }
+    }
+  }
+
+  throw new Error("The logo image is still too large after compression.");
+}
+
 async function processSignatureImage(file: File) {
   if (!file.type.startsWith("image/")) {
     throw new Error("Please upload a PNG, JPEG or WebP image.");
@@ -272,12 +304,51 @@ async function processSignatureImage(file: File) {
   return encodeCompressedSignature(paddedCanvas);
 }
 
-function signatureSizeLabel(signatureSrc: string) {
-  if (!signatureSrc.startsWith("data:image/")) {
+async function processLogoImage(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Please upload a PNG, JPEG or WebP image.");
+  }
+
+  if (file.size > MAX_SIGNATURE_FILE_BYTES) {
+    throw new Error("Please upload a logo image smaller than 6 MB.");
+  }
+
+  const image = await loadImage(file);
+  const sourceScale = Math.min(1, 800 / Math.max(image.width, image.height));
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = Math.max(1, Math.round(image.width * sourceScale));
+  sourceCanvas.height = Math.max(1, Math.round(image.height * sourceScale));
+  get2dContext(sourceCanvas).drawImage(
+    image,
+    0,
+    0,
+    sourceCanvas.width,
+    sourceCanvas.height,
+  );
+
+  return encodeCompressedLogo(sourceCanvas);
+}
+
+function imageSizeLabel(imageSrc: string) {
+  if (imageSrc === REMOVED_IMAGE_SOURCE) {
+    return "Removed from template";
+  }
+
+  if (!imageSrc.startsWith("data:image/")) {
     return "Default image";
   }
 
-  return `${Math.ceil(signatureSrc.length / 1024)} KB compressed`;
+  return `${Math.ceil(imageSrc.length / 1024)} KB compressed`;
+}
+
+function clampSliderNumber(value: string, fallback: number) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function offsetValue(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export default function AdminEventsEditor({
@@ -295,11 +366,44 @@ export default function AdminEventsEditor({
   const [uploadingSignature, setUploadingSignature] = useState<0 | 1 | null>(
     null,
   );
+  const [uploadingLogo, setUploadingLogo] = useState<
+    "leftLogoSrc" | "rightLogoSrc" | null
+  >(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.slug === selectedSlug) ?? events[0],
     [events, selectedSlug],
   );
+  const previewCertificate = useMemo<CertificateRecord | null>(() => {
+    if (!selectedEvent) {
+      return null;
+    }
+
+    const letterId = `${selectedEvent.certificateIdPrefix}${selectedEvent.certificateIdExample}`;
+
+    if (selectedEvent.certificateType === "Recognition") {
+      return {
+        letterId,
+        studentName: "Prof. Asha Patil",
+        className: "",
+        recipientType: "Faculty",
+        recognitionRole: "Secretary",
+        recognitionBodyType: "Club",
+        recognitionBodyName: selectedEvent.eventName || "Nature",
+        recognitionAcademicYear: "2025-26",
+        recognitionTerm: "Term I",
+      };
+    }
+
+    return {
+      letterId,
+      studentName: "Rhea Cruz Fernandes",
+      className: "FE EE",
+      meritRank: "First",
+      meritCategory: "Mime",
+    };
+  }, [selectedEvent]);
 
   function replaceSelected(nextEvent: CertificateEvent) {
     setEvents((currentEvents) =>
@@ -439,6 +543,84 @@ export default function AdminEventsEditor({
     setMessage("Default signature restored. Click Save Event to publish it.");
   }
 
+  function removeSignatoryImage(index: 0 | 1) {
+    updateSignatoryImage(index, REMOVED_IMAGE_SOURCE);
+    setSaveState("idle");
+    setMessage("Signature removed from this template. Click Save Event to publish it.");
+  }
+
+  async function handleLogoUpload(
+    key: "leftLogoSrc" | "rightLogoSrc",
+    changeEvent: ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = changeEvent.target.files?.[0];
+    changeEvent.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    setUploadingLogo(key);
+    setSaveState("idle");
+    setMessage("");
+
+    try {
+      const logoSrc = await processLogoImage(file);
+      updateField(key, logoSrc);
+      setMessage("Logo compressed. Click Save Event to publish this template change.");
+    } catch (error) {
+      setSaveState("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not process this logo image.",
+      );
+    } finally {
+      setUploadingLogo(null);
+    }
+  }
+
+  function resetLogoImage(key: "leftLogoSrc" | "rightLogoSrc") {
+    updateField(
+      key,
+      key === "leftLogoSrc" ? DEFAULT_LEFT_LOGO_SRC : DEFAULT_RIGHT_LOGO_SRC,
+    );
+    setSaveState("idle");
+    setMessage("Default logo restored. Click Save Event to publish it.");
+  }
+
+  function removeLogoImage(key: "leftLogoSrc" | "rightLogoSrc") {
+    updateField(key, REMOVED_IMAGE_SOURCE);
+    setSaveState("idle");
+    setMessage("Logo removed from this template. Click Save Event to publish it.");
+  }
+
+  function updateTemplateOffset(
+    target: TemplateOffsetTarget,
+    nextX: number,
+    nextY: number,
+  ) {
+    if (!selectedEvent) {
+      return;
+    }
+
+    const fieldMap = {
+      title: ["titleOffsetX", "titleOffsetY"],
+      body: ["bodyOffsetX", "bodyOffsetY"],
+      qr: ["qrOffsetX", "qrOffsetY"],
+    } as const satisfies Record<
+      TemplateOffsetTarget,
+      readonly [keyof CertificateEvent, keyof CertificateEvent]
+    >;
+    const [xKey, yKey] = fieldMap[target];
+
+    replaceSelected({
+      ...selectedEvent,
+      [xKey]: nextX,
+      [yKey]: nextY,
+    });
+  }
+
   async function saveEvent() {
     if (!selectedEvent) {
       return;
@@ -493,7 +675,7 @@ export default function AdminEventsEditor({
     setMessage("");
   }
 
-  if (!selectedEvent) {
+  if (!selectedEvent || !previewCertificate) {
     return null;
   }
 
@@ -759,17 +941,22 @@ export default function AdminEventsEditor({
             </label>
             <div className="admin-signature-card">
               <div className="admin-signature-preview">
-                <Image
-                  src={selectedEvent.signatories[0].signatureSrc}
-                  alt={selectedEvent.signatories[0].signatureAlt}
-                  width={220}
-                  height={92}
-                  unoptimized
-                />
+                {selectedEvent.signatories[0].signatureSrc ===
+                REMOVED_IMAGE_SOURCE ? (
+                  <span className="admin-empty-preview">Removed</span>
+                ) : (
+                  <Image
+                    src={selectedEvent.signatories[0].signatureSrc}
+                    alt={selectedEvent.signatories[0].signatureAlt}
+                    width={220}
+                    height={92}
+                    unoptimized
+                  />
+                )}
               </div>
               <div className="admin-signature-details">
                 <span>Signatory 1 Signature Image</span>
-                <small>{signatureSizeLabel(selectedEvent.signatories[0].signatureSrc)}</small>
+                <small>{imageSizeLabel(selectedEvent.signatories[0].signatureSrc)}</small>
                 <div className="admin-signature-actions">
                   <label className="secondary-action-button admin-upload-button">
                     {uploadingSignature === 0 ? "Cleaning..." : "Upload & Clean"}
@@ -785,6 +972,13 @@ export default function AdminEventsEditor({
                     onClick={() => resetSignatoryImage(0)}
                   >
                     Use Default
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-action-button"
+                    onClick={() => removeSignatoryImage(0)}
+                  >
+                    Remove
                   </button>
                 </div>
               </div>
@@ -809,17 +1003,22 @@ export default function AdminEventsEditor({
             </label>
             <div className="admin-signature-card">
               <div className="admin-signature-preview">
-                <Image
-                  src={selectedEvent.signatories[1].signatureSrc}
-                  alt={selectedEvent.signatories[1].signatureAlt}
-                  width={220}
-                  height={92}
-                  unoptimized
-                />
+                {selectedEvent.signatories[1].signatureSrc ===
+                REMOVED_IMAGE_SOURCE ? (
+                  <span className="admin-empty-preview">Removed</span>
+                ) : (
+                  <Image
+                    src={selectedEvent.signatories[1].signatureSrc}
+                    alt={selectedEvent.signatories[1].signatureAlt}
+                    width={220}
+                    height={92}
+                    unoptimized
+                  />
+                )}
               </div>
               <div className="admin-signature-details">
                 <span>Signatory 2 Signature Image</span>
-                <small>{signatureSizeLabel(selectedEvent.signatories[1].signatureSrc)}</small>
+                <small>{imageSizeLabel(selectedEvent.signatories[1].signatureSrc)}</small>
                 <div className="admin-signature-actions">
                   <label className="secondary-action-button admin-upload-button">
                     {uploadingSignature === 1 ? "Cleaning..." : "Upload & Clean"}
@@ -836,6 +1035,13 @@ export default function AdminEventsEditor({
                   >
                     Use Default
                   </button>
+                  <button
+                    type="button"
+                    className="secondary-action-button"
+                    onClick={() => removeSignatoryImage(1)}
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
             </div>
@@ -850,6 +1056,339 @@ export default function AdminEventsEditor({
               />
             </label>
           </div>
+
+          <section className="advanced-template-panel" aria-label="Advanced template editor">
+            <div className="advanced-template-heading">
+              <div>
+                <p className="admin-eyebrow">Advanced</p>
+                <h2>Template Preview & Layout</h2>
+                <p>
+                  Fine tune the certificate visually while keeping the basic event
+                  settings above unchanged.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="secondary-action-button"
+                onClick={() => setShowAdvanced((isOpen) => !isOpen)}
+              >
+                {showAdvanced ? "Hide Advanced" : "Open Advanced"}
+              </button>
+            </div>
+
+            {showAdvanced ? (
+              <div className="advanced-template-body">
+                <div className="advanced-template-controls">
+                  <div className="advanced-control-group">
+                    <h3>Layout & Theme</h3>
+                    <div className="admin-grid admin-grid-compact">
+                      <label>
+                        <span>Orientation</span>
+                        <select
+                          value={selectedEvent.certificateOrientation}
+                          onChange={(event) =>
+                            updateField(
+                              "certificateOrientation",
+                              event.target.value as CertificateOrientation,
+                            )
+                          }
+                        >
+                          {certificateOrientations.map((orientation) => (
+                            <option key={orientation}>{orientation}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span>Theme</span>
+                        <select
+                          value={selectedEvent.certificateTheme}
+                          onChange={(event) =>
+                            updateField(
+                              "certificateTheme",
+                              event.target.value as CertificateTheme,
+                            )
+                          }
+                        >
+                          {certificateThemes.map((theme) => (
+                            <option key={theme}>{theme}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="advanced-control-group">
+                    <h3>Logos</h3>
+                    <div className="admin-template-image-grid">
+                      <div className="admin-template-image-card">
+                        <div className="admin-logo-preview">
+                          {selectedEvent.leftLogoSrc === REMOVED_IMAGE_SOURCE ? (
+                            <span className="admin-empty-preview">Removed</span>
+                          ) : (
+                            <Image
+                              src={selectedEvent.leftLogoSrc}
+                              alt="Left logo preview"
+                              width={90}
+                              height={90}
+                              unoptimized
+                            />
+                          )}
+                        </div>
+                        <div className="admin-signature-details">
+                          <span>Left Logo</span>
+                          <small>{imageSizeLabel(selectedEvent.leftLogoSrc)}</small>
+                          <div className="admin-signature-actions">
+                            <label className="secondary-action-button admin-upload-button">
+                              {uploadingLogo === "leftLogoSrc"
+                                ? "Compressing..."
+                                : "Upload"}
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                onChange={(event) =>
+                                  void handleLogoUpload("leftLogoSrc", event)
+                                }
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="secondary-action-button"
+                              onClick={() => resetLogoImage("leftLogoSrc")}
+                            >
+                              Use Default
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-action-button"
+                              onClick={() => removeLogoImage("leftLogoSrc")}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="admin-template-image-card">
+                        <div className="admin-logo-preview">
+                          {selectedEvent.rightLogoSrc === REMOVED_IMAGE_SOURCE ? (
+                            <span className="admin-empty-preview">Removed</span>
+                          ) : (
+                            <Image
+                              src={selectedEvent.rightLogoSrc}
+                              alt="Right logo preview"
+                              width={90}
+                              height={90}
+                              unoptimized
+                            />
+                          )}
+                        </div>
+                        <div className="admin-signature-details">
+                          <span>Right Logo</span>
+                          <small>{imageSizeLabel(selectedEvent.rightLogoSrc)}</small>
+                          <div className="admin-signature-actions">
+                            <label className="secondary-action-button admin-upload-button">
+                              {uploadingLogo === "rightLogoSrc"
+                                ? "Compressing..."
+                                : "Upload"}
+                              <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                onChange={(event) =>
+                                  void handleLogoUpload("rightLogoSrc", event)
+                                }
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="secondary-action-button"
+                              onClick={() => resetLogoImage("rightLogoSrc")}
+                            >
+                              Use Default
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-action-button"
+                              onClick={() => removeLogoImage("rightLogoSrc")}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="advanced-control-group">
+                    <h3>Signature Size</h3>
+                    <div className="admin-grid admin-grid-compact">
+                      <label className="range-field">
+                        <span>Signatory 1 Size</span>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="2"
+                          step="0.05"
+                          value={selectedEvent.signatoryOneScale}
+                          onChange={(event) =>
+                            updateField(
+                              "signatoryOneScale",
+                              clampSliderNumber(event.target.value, 1),
+                            )
+                          }
+                        />
+                        <output>
+                          {Math.round(selectedEvent.signatoryOneScale * 100)}%
+                        </output>
+                      </label>
+                      <label className="range-field">
+                        <span>Signatory 2 Size</span>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="2"
+                          step="0.05"
+                          value={selectedEvent.signatoryTwoScale}
+                          onChange={(event) =>
+                            updateField(
+                              "signatoryTwoScale",
+                              clampSliderNumber(event.target.value, 1.22),
+                            )
+                          }
+                        />
+                        <output>
+                          {Math.round(selectedEvent.signatoryTwoScale * 100)}%
+                        </output>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="advanced-control-group">
+                    <h3>Text & QR Position</h3>
+                    <div className="admin-grid admin-grid-compact">
+                      <label className="range-field">
+                        <span>Title Horizontal</span>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={selectedEvent.titleOffsetX}
+                          onChange={(event) =>
+                            updateTemplateOffset(
+                              "title",
+                              offsetValue(event.target.value),
+                              selectedEvent.titleOffsetY,
+                            )
+                          }
+                        />
+                        <output>{selectedEvent.titleOffsetX}px</output>
+                      </label>
+                      <label className="range-field">
+                        <span>Title Vertical</span>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={selectedEvent.titleOffsetY}
+                          onChange={(event) =>
+                            updateTemplateOffset(
+                              "title",
+                              selectedEvent.titleOffsetX,
+                              offsetValue(event.target.value),
+                            )
+                          }
+                        />
+                        <output>{selectedEvent.titleOffsetY}px</output>
+                      </label>
+                      <label className="range-field">
+                        <span>Body Horizontal</span>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={selectedEvent.bodyOffsetX}
+                          onChange={(event) =>
+                            updateTemplateOffset(
+                              "body",
+                              offsetValue(event.target.value),
+                              selectedEvent.bodyOffsetY,
+                            )
+                          }
+                        />
+                        <output>{selectedEvent.bodyOffsetX}px</output>
+                      </label>
+                      <label className="range-field">
+                        <span>Body Vertical</span>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={selectedEvent.bodyOffsetY}
+                          onChange={(event) =>
+                            updateTemplateOffset(
+                              "body",
+                              selectedEvent.bodyOffsetX,
+                              offsetValue(event.target.value),
+                            )
+                          }
+                        />
+                        <output>{selectedEvent.bodyOffsetY}px</output>
+                      </label>
+                      <label className="range-field">
+                        <span>QR Horizontal</span>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={selectedEvent.qrOffsetX}
+                          onChange={(event) =>
+                            updateTemplateOffset(
+                              "qr",
+                              offsetValue(event.target.value),
+                              selectedEvent.qrOffsetY,
+                            )
+                          }
+                        />
+                        <output>{selectedEvent.qrOffsetX}px</output>
+                      </label>
+                      <label className="range-field">
+                        <span>QR Vertical</span>
+                        <input
+                          type="range"
+                          min="-180"
+                          max="180"
+                          value={selectedEvent.qrOffsetY}
+                          onChange={(event) =>
+                            updateTemplateOffset(
+                              "qr",
+                              selectedEvent.qrOffsetX,
+                              offsetValue(event.target.value),
+                            )
+                          }
+                        />
+                        <output>{selectedEvent.qrOffsetY}px</output>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="advanced-preview-panel">
+                  <div className="advanced-preview-heading">
+                    <div>
+                      <p className="admin-eyebrow">Live Preview</p>
+                      <strong>{selectedEvent.letterTitle}</strong>
+                    </div>
+                    <small>Drag the title, body or QR area in the preview.</small>
+                  </div>
+                  <VerificationCertificate
+                    certificate={previewCertificate}
+                    event={selectedEvent}
+                    showActions={false}
+                    templateEdit={{ onOffsetChange: updateTemplateOffset }}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </section>
         </form>
       </div>
     </section>

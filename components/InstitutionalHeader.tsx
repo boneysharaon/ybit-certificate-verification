@@ -2,6 +2,11 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import {
+  DEFAULT_LEFT_LOGO_SRC,
+  DEFAULT_RIGHT_LOGO_SRC,
+  REMOVED_IMAGE_SOURCE,
+} from "@/lib/certificateEvents";
 
 type LogoSlotProps = {
   src: string;
@@ -11,7 +16,8 @@ type LogoSlotProps = {
 };
 
 function LogoSlot({ src, alt, fallback, align }: LogoSlotProps) {
-  const [missing, setMissing] = useState(false);
+  const [failedSrc, setFailedSrc] = useState("");
+  const missing = src === REMOVED_IMAGE_SOURCE || failedSrc === src;
 
   return (
     <div className={`logo-slot logo-slot-${align}`} aria-hidden={missing}>
@@ -25,18 +31,26 @@ function LogoSlot({ src, alt, fallback, align }: LogoSlotProps) {
           height={82}
           className="institution-logo"
           unoptimized
-          onError={() => setMissing(true)}
+          onError={() => setFailedSrc(src)}
         />
       )}
     </div>
   );
 }
 
-export default function InstitutionalHeader() {
+type InstitutionalHeaderProps = {
+  leftLogoSrc?: string;
+  rightLogoSrc?: string;
+};
+
+export default function InstitutionalHeader({
+  leftLogoSrc = DEFAULT_LEFT_LOGO_SRC,
+  rightLogoSrc = DEFAULT_RIGHT_LOGO_SRC,
+}: InstitutionalHeaderProps) {
   return (
     <header className="institutional-header">
       <LogoSlot
-        src="/ybit-logo.png"
+        src={leftLogoSrc}
         alt="Yashwantrao Bhonsale Institute of Technology logo"
         fallback="YBIT"
         align="left"
@@ -56,7 +70,7 @@ export default function InstitutionalHeader() {
       </div>
 
       <LogoSlot
-        src="/mumbai-university-logo.png"
+        src={rightLogoSrc}
         alt="University of Mumbai logo"
         fallback="MU"
         align="right"

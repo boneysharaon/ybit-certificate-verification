@@ -125,6 +125,7 @@ export async function POST(request: Request) {
         found: true,
         status: "valid",
         certificate: result.certificate,
+        event,
       },
       200,
     );

@@ -117,7 +117,10 @@ export default function CertificateVerificationForm({
       </form>
 
       {result?.status === "valid" ? (
-        <VerificationCertificate certificate={result.certificate} event={event} />
+        <VerificationCertificate
+          certificate={result.certificate}
+          event={result.event ?? event}
+        />
       ) : null}
 
       {result?.status === "revoked" ? (

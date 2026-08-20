@@ -1,3 +1,5 @@
+import type { CertificateEvent } from "@/lib/certificateEvents";
+
 export type CertificateRecord = {
   letterId: string;
   studentName: string;
@@ -32,6 +34,7 @@ export type VerifyApiResponse =
       found: true;
       status: "valid";
       certificate: CertificateRecord;
+      event?: CertificateEvent;
     }
   | {
       found: true;

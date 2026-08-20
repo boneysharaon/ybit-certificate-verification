@@ -112,6 +112,44 @@ describe("verification UI", () => {
     expect(screen.queryByText("Event Date")).not.toBeInTheDocument();
   });
 
+  it("uses the fresh event template returned by verification", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          found: true,
+          status: "valid",
+          certificate: {
+            letterId: "YBIT/CulturalDept/YF/V/001",
+            studentName: "Saee Manish Dhande",
+            className: "T.E. Computer Science Engineering",
+          },
+          event: {
+            ...event,
+            letterTitle: "UPDATED SIGNATURE TEMPLATE",
+            signatories: [
+              event.signatories[0],
+              {
+                ...event.signatories[1],
+                signatureSrc:
+                  "data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AA/vuUAAA=",
+              },
+            ],
+          },
+        }),
+      ),
+    );
+
+    render(<CertificateVerificationForm event={event} />);
+
+    await userEvent.type(screen.getByLabelText("Certificate ID"), "001");
+    await userEvent.click(screen.getByRole("button", { name: "Verify eCertificate" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("UPDATED SIGNATURE TEMPLATE")).toBeInTheDocument();
+    });
+  });
+
   it("shows the not-found message for a valid but nonexistent ID", async () => {
     vi.stubGlobal(
       "fetch",

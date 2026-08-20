@@ -476,7 +476,9 @@ export default function AdminEventsEditor({
       });
       setSelectedSlug(savedEvent.slug);
       setSaveState("saved");
-      setMessage("Saved to Google Sheets. Certificate data tab checked.");
+      setMessage(
+        "Saved to Google Sheets. Public verification will use this template and these signatures on the next Verify eCertificate click.",
+      );
     } catch (error) {
       setSaveState("error");
       setMessage(error instanceof Error ? error.message : "Could not save.");

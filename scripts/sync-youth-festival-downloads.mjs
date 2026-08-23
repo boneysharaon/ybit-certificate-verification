@@ -17,12 +17,8 @@ const certificateDir = path.join(projectRoot, "private", privateSubDir);
 const indexPath = path.join(projectRoot, "lib", "youthFestivalDownloads.json");
 const filePattern = /^YBIT-CulturalDept-YF-V-([A-Z0-9]+)-(.+)\.pdf$/;
 
-function makeCertificateId(idPart) {
-  return `YBIT/CulturalDept/YF/V/${idPart}`;
-}
-
-function makeHref(fileName) {
-  return `/api/download/youth-festival-2026/${encodeURIComponent(fileName)}`;
+function makeHref(downloadId) {
+  return `/api/download/youth-festival-2026/${downloadId}`;
 }
 
 const files = (await readdir(sourceDir))
@@ -39,13 +35,11 @@ for (const fileName of files) {
     throw new Error(`Unexpected certificate PDF filename: ${fileName}`);
   }
 
-  const [, idPart, studentName] = match;
+  const [, , studentName] = match;
   await copyFile(path.join(sourceDir, fileName), path.join(certificateDir, fileName));
   downloads.push({
     studentName,
-    certificateId: makeCertificateId(idPart),
     fileName,
-    href: makeHref(fileName),
   });
 }
 
@@ -54,6 +48,12 @@ downloads.sort((left, right) =>
     sensitivity: "base",
   }),
 );
+
+downloads.forEach((download, index) => {
+  const downloadId = String(index + 1).padStart(3, "0");
+  download.downloadId = downloadId;
+  download.href = makeHref(downloadId);
+});
 
 await writeFile(`${indexPath}.tmp`, `${JSON.stringify(downloads, null, 2)}\n`);
 await rename(`${indexPath}.tmp`, indexPath);

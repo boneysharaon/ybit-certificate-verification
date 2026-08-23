@@ -26,12 +26,11 @@ export default function YouthFestivalDownloadsPage() {
 
       <ol className="download-directory" aria-label="Youth Festival 2026 eCertificate downloads">
         {downloads.map((certificate, index) => (
-          <li key={certificate.certificateId}>
+          <li key={certificate.downloadId}>
             <a className="download-link" href={certificate.href}>
               <span className="download-index">{String(index + 1).padStart(3, "0")}</span>
               <span className="download-copy">
                 <strong>{certificate.studentName}</strong>
-                <small>{certificate.certificateId}</small>
               </span>
               <span className="download-format" aria-label="Download PDF">
                 PDF

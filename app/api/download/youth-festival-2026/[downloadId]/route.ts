@@ -9,7 +9,7 @@ export const revalidate = 0;
 
 type DownloadRouteProps = {
   params: Promise<{
-    fileName: string;
+    downloadId: string;
   }>;
 };
 
@@ -52,8 +52,8 @@ function makeWaitMessage(waitMs: number) {
 }
 
 export async function GET(request: NextRequest, { params }: DownloadRouteProps) {
-  const { fileName } = await params;
-  const certificate = downloads.find((download) => download.fileName === fileName);
+  const { downloadId } = await params;
+  const certificate = downloads.find((download) => download.downloadId === downloadId);
 
   if (!certificate) {
     return new Response("Certificate PDF not found.", {

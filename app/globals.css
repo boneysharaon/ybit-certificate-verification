@@ -499,6 +499,11 @@ input:focus-visible {
   font-size: 0.98rem;
 }
 
+.document-meta-grid div:first-child strong {
+  font-size: 0.86rem;
+  line-height: 1.28;
+}
+
 .letter-body {
   color: var(--ink);
   font-family: Georgia, "Times New Roman", serif;
@@ -1365,6 +1370,11 @@ body.pdf-export-mode .verification-document .affiliation {
 body.pdf-export-mode .document-meta-grid {
   margin: 18px 0 22px;
   padding: 14px;
+}
+
+body.pdf-export-mode .document-meta-grid div:first-child strong {
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 body.pdf-export-mode .verification-document-landscape .document-meta-grid {

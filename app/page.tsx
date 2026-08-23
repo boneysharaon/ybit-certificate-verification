@@ -35,6 +35,13 @@ export default async function Home() {
             </small>
           </Link>
         ))}
+        <Link
+          className="certificate-directory-link certificate-directory-link-download"
+          href="/youth-festival-ecertificates"
+        >
+          <span>Download Youth Festival 2026 Volunteer eCertificates</span>
+          <small>Individual PDF links by student name</small>
+        </Link>
       </nav>
     </main>
   );

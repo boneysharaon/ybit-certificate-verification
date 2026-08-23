@@ -213,6 +213,10 @@ input:focus-visible {
   background: var(--accent-soft);
 }
 
+.certificate-directory-link-download {
+  border-left-color: var(--gold);
+}
+
 .certificate-directory-link span {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.18rem;
@@ -222,6 +226,78 @@ input:focus-visible {
 .certificate-directory-link small {
   color: var(--ink-muted);
   font-size: 0.92rem;
+}
+
+.download-intro {
+  padding-bottom: 18px;
+}
+
+.download-directory {
+  display: grid;
+  gap: 8px;
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.download-link {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 54px;
+  align-items: center;
+  gap: 14px;
+  min-height: 66px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.download-link:hover {
+  border-color: rgba(15, 91, 79, 0.45);
+  background: var(--accent-soft);
+}
+
+.download-index {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.download-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.download-copy strong {
+  overflow-wrap: anywhere;
+  color: var(--accent-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.download-copy small {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.download-format {
+  display: grid;
+  width: 42px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgba(15, 91, 79, 0.22);
+  border-radius: 4px;
+  background: var(--surface-muted);
+  color: var(--accent-deep);
+  font-size: 0.76rem;
+  font-weight: 800;
 }
 
 .back-link {
@@ -773,6 +849,12 @@ input:focus-visible {
     font-size: 1.8rem;
   }
 
+  .download-link {
+    grid-template-columns: 44px minmax(0, 1fr) 48px;
+    gap: 10px;
+    padding: 12px 10px;
+  }
+
   .verification-form {
     grid-template-columns: 1fr;
     padding: 18px;
@@ -820,6 +902,18 @@ input:focus-visible {
 
   .institute-name {
     font-size: 1.08rem;
+  }
+
+  .download-link {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .download-index {
+    display: none;
+  }
+
+  .download-copy strong {
+    font-size: 1rem;
   }
 
   .verification-document {

@@ -19,12 +19,15 @@ export default function YouthFestivalDownloadsPage() {
         <p className="section-kicker">Youth Festival 2026</p>
         <h1 id="page-title">Volunteer eCertificate Downloads</h1>
         <p>{downloads.length} individual eCertificates are available below.</p>
+        <p className="download-cooldown-note">
+          After downloading one eCertificate, please wait 10 minutes before downloading another.
+        </p>
       </section>
 
       <ol className="download-directory" aria-label="Youth Festival 2026 eCertificate downloads">
         {downloads.map((certificate, index) => (
           <li key={certificate.certificateId}>
-            <a className="download-link" href={certificate.href} download>
+            <a className="download-link" href={certificate.href}>
               <span className="download-index">{String(index + 1).padStart(3, "0")}</span>
               <span className="download-copy">
                 <strong>{certificate.studentName}</strong>

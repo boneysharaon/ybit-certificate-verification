@@ -9,11 +9,11 @@ const sourceDir = path.join(
   workspaceRoot,
   "youth-festival-certificates-all-142-compact",
 );
-const publicSubDir = path.join(
+const privateSubDir = path.join(
   "ecertificates",
   "youth-festival-2026",
 );
-const publicDir = path.join(projectRoot, "public", publicSubDir);
+const certificateDir = path.join(projectRoot, "private", privateSubDir);
 const indexPath = path.join(projectRoot, "lib", "youthFestivalDownloads.json");
 const filePattern = /^YBIT-CulturalDept-YF-V-([A-Z0-9]+)-(.+)\.pdf$/;
 
@@ -22,9 +22,7 @@ function makeCertificateId(idPart) {
 }
 
 function makeHref(fileName) {
-  return `/${publicSubDir
-    .split(path.sep)
-    .join("/")}/${encodeURIComponent(fileName)}`;
+  return `/api/download/youth-festival-2026/${encodeURIComponent(fileName)}`;
 }
 
 const files = (await readdir(sourceDir))
@@ -32,7 +30,7 @@ const files = (await readdir(sourceDir))
   .sort((left, right) => left.localeCompare(right));
 
 const downloads = [];
-await mkdir(publicDir, { recursive: true });
+await mkdir(certificateDir, { recursive: true });
 
 for (const fileName of files) {
   const match = fileName.match(filePattern);
@@ -42,7 +40,7 @@ for (const fileName of files) {
   }
 
   const [, idPart, studentName] = match;
-  await copyFile(path.join(sourceDir, fileName), path.join(publicDir, fileName));
+  await copyFile(path.join(sourceDir, fileName), path.join(certificateDir, fileName));
   downloads.push({
     studentName,
     certificateId: makeCertificateId(idPart),

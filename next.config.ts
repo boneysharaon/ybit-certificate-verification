@@ -30,6 +30,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  outputFileTracingIncludes: {
+    "/api/download/youth-festival-2026/[fileName]": [
+      "./private/ecertificates/youth-festival-2026/**/*",
+    ],
+  },
   poweredByHeader: false,
   async headers() {
     return [

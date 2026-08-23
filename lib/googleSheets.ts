@@ -1102,6 +1102,79 @@ export async function upsertCertificateEvent(input: unknown) {
   return event;
 }
 
+export async function deleteCertificateEvent(slug: string) {
+  const normalisedSlug = slug.trim().toLowerCase();
+
+  if (!normalisedSlug) {
+    throw new SheetsRequestError("Event slug is required.");
+  }
+
+  await ensureEventsSheet();
+
+  const [rows, metadata] = await Promise.all([
+    readValues(EVENTS_SHEET_NAME, `A:${EVENTS_SHEET_LAST_COLUMN}`),
+    getSpreadsheetMetadata(),
+  ]);
+  const headers = rows[0] ?? [...EVENTS_SHEET_HEADERS];
+  const eventRowIndex = rows.findIndex((row, index) => {
+    if (index === 0) {
+      return false;
+    }
+
+    const event = sheetRowToEvent(headers, row);
+    return event?.slug === normalisedSlug;
+  });
+
+  if (eventRowIndex < 1) {
+    throw new SheetsRequestError("Event not found in the Events sheet.");
+  }
+
+  const event = sheetRowToEvent(headers, rows[eventRowIndex] ?? []);
+
+  if (!event) {
+    throw new SheetsRequestError("Event row could not be read.");
+  }
+
+  const eventsSheet = getEventsSheet(metadata);
+
+  if (!eventsSheet?.sheetId) {
+    throw new SheetsRequestError("Events sheet not found.");
+  }
+
+  const requests: Record<string, unknown>[] = [
+    {
+      deleteDimension: {
+        range: {
+          sheetId: eventsSheet.sheetId,
+          dimension: "ROWS",
+          startIndex: eventRowIndex,
+          endIndex: eventRowIndex + 1,
+        },
+      },
+    },
+  ];
+  const dataSheet = getSheetByTitle(metadata, event.sheetTabName);
+  const canDeleteDataSheet =
+    !!dataSheet?.sheetId &&
+    event.sheetTabName.trim().toLowerCase() !==
+      EVENTS_SHEET_NAME.toLowerCase();
+
+  if (canDeleteDataSheet) {
+    requests.push({
+      deleteSheet: {
+        sheetId: dataSheet.sheetId,
+      },
+    });
+  }
+
+  await batchUpdate(requests);
+
+  return {
+    event,
+    deletedDataSheet: canDeleteDataSheet,
+  };
+}
+
 export async function getCertificateByLetterId(
   normalizedLetterId: string,
   options: CertificateLookupOptions = {},

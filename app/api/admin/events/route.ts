@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import {
+  deleteCertificateEvent,
   ensureEventsSheet,
   getCertificateEvents,
   upsertCertificateEvent,
   SheetsConfigurationError,
+  SheetsRequestError,
 } from "@/lib/googleSheets";
 import { getAdminSessionFromRequest } from "@/lib/auth";
 
@@ -73,5 +75,51 @@ export async function POST(request: Request) {
     }
 
     return jsonResponse({ message: "Could not save the event." }, 500);
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!ensureAdmin(request)) {
+    return jsonResponse({ message: "Not authorized." }, 401);
+  }
+
+  let payload: unknown;
+
+  try {
+    payload = await request.json();
+  } catch {
+    return jsonResponse({ message: "Invalid delete payload." }, 400);
+  }
+
+  const body = typeof payload === "object" && payload !== null ? payload : {};
+  const slug =
+    "slug" in body && typeof (body as { slug?: unknown }).slug === "string"
+      ? (body as { slug: string }).slug
+      : "";
+
+  if (!slug.trim()) {
+    return jsonResponse({ message: "Event slug is required." }, 400);
+  }
+
+  try {
+    const result = await deleteCertificateEvent(slug);
+    return jsonResponse(result, 200);
+  } catch (error) {
+    if (error instanceof SheetsConfigurationError) {
+      return jsonResponse({ message: "Google Sheets is not configured." }, 503);
+    }
+
+    if (error instanceof SheetsRequestError) {
+      return jsonResponse(
+        { message: error.message },
+        error.message.toLowerCase().includes("not found") ? 404 : 500,
+      );
+    }
+
+    if (error instanceof Error) {
+      return jsonResponse({ message: error.message }, 400);
+    }
+
+    return jsonResponse({ message: "Could not delete the event." }, 500);
   }
 }

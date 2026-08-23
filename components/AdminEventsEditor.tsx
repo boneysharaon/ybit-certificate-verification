@@ -29,6 +29,7 @@ type AdminEventsEditorProps = {
 };
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+type DeleteState = "idle" | "deleting";
 
 const MAX_SIGNATURE_FILE_BYTES = 6 * 1024 * 1024;
 const MAX_SIGNATURE_DATA_URL_LENGTH = 45_000;
@@ -360,8 +361,12 @@ export default function AdminEventsEditor({
       ? initialEvents.map(cloneEvent)
       : [newDraftEvent()],
   );
+  const [savedSlugs, setSavedSlugs] = useState(
+    () => new Set(initialEvents.map((event) => event.slug)),
+  );
   const [selectedSlug, setSelectedSlug] = useState(events[0]?.slug ?? "");
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [deleteState, setDeleteState] = useState<DeleteState>("idle");
   const [message, setMessage] = useState("");
   const [uploadingSignature, setUploadingSignature] = useState<0 | 1 | null>(
     null,
@@ -375,6 +380,9 @@ export default function AdminEventsEditor({
     () => events.find((event) => event.slug === selectedSlug) ?? events[0],
     [events, selectedSlug],
   );
+  const selectedEventIsSaved = selectedEvent
+    ? savedSlugs.has(selectedEvent.slug)
+    : false;
   const previewCertificate = useMemo<CertificateRecord | null>(() => {
     if (!selectedEvent) {
       return null;
@@ -656,6 +664,11 @@ export default function AdminEventsEditor({
             )
           : [...currentEvents, cloneEvent(savedEvent)];
       });
+      setSavedSlugs((currentSlugs) => {
+        const nextSlugs = new Set(currentSlugs);
+        nextSlugs.add(savedEvent.slug);
+        return nextSlugs;
+      });
       setSelectedSlug(savedEvent.slug);
       setSaveState("saved");
       setMessage(
@@ -673,6 +686,78 @@ export default function AdminEventsEditor({
     setSelectedSlug(event.slug);
     setSaveState("idle");
     setMessage("");
+  }
+
+  function removeEventFromEditor(slug: string) {
+    const nextEvents = events.filter((event) => event.slug !== slug);
+    const updatedEvents =
+      nextEvents.length > 0 ? nextEvents : [newDraftEvent()];
+
+    setEvents(updatedEvents);
+
+    if (selectedSlug === slug) {
+      setSelectedSlug(updatedEvents[0]?.slug ?? "");
+    }
+  }
+
+  async function deleteEvent() {
+    if (!selectedEvent) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${selectedEvent.eventName}"?\n\nThis will remove the event from the Events sheet, remove its public verification link from the homepage, and delete the related Google Sheet tab "${selectedEvent.sheetTabName}".\n\nThis cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setSaveState("idle");
+    setMessage("");
+
+    if (!selectedEventIsSaved) {
+      removeEventFromEditor(selectedEvent.slug);
+      setMessage("Unsaved draft event removed.");
+      return;
+    }
+
+    setDeleteState("deleting");
+
+    try {
+      const response = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ slug: selectedEvent.slug }),
+      });
+      const data = (await response.json()) as {
+        deletedDataSheet?: boolean;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.message || "Could not delete the event.");
+      }
+
+      setSavedSlugs((currentSlugs) => {
+        const nextSlugs = new Set(currentSlugs);
+        nextSlugs.delete(selectedEvent.slug);
+        return nextSlugs;
+      });
+      removeEventFromEditor(selectedEvent.slug);
+      setMessage(
+        data.deletedDataSheet
+          ? "Event deleted. Its homepage link and related Google Sheet tab were removed."
+          : "Event deleted. Its homepage link was removed; the related sheet tab was already missing.",
+      );
+    } catch (error) {
+      setSaveState("error");
+      setMessage(error instanceof Error ? error.message : "Could not delete.");
+    } finally {
+      setDeleteState("idle");
+    }
   }
 
   if (!selectedEvent || !previewCertificate) {
@@ -723,14 +808,24 @@ export default function AdminEventsEditor({
               <p className="admin-eyebrow">Template</p>
               <h1>{selectedEvent.eventName}</h1>
             </div>
-            <button
-              type="button"
-              className="verify-button"
-              disabled={saveState === "saving"}
-              onClick={saveEvent}
-            >
-              {saveState === "saving" ? "Saving..." : "Save Event"}
-            </button>
+            <div className="admin-editor-actions">
+              <button
+                type="button"
+                className="danger-action-button"
+                disabled={saveState === "saving" || deleteState === "deleting"}
+                onClick={deleteEvent}
+              >
+                {deleteState === "deleting" ? "Deleting..." : "Delete Event"}
+              </button>
+              <button
+                type="button"
+                className="verify-button"
+                disabled={saveState === "saving" || deleteState === "deleting"}
+                onClick={saveEvent}
+              >
+                {saveState === "saving" ? "Saving..." : "Save Event"}
+              </button>
+            </div>
           </div>
 
           {message ? (

@@ -4,7 +4,8 @@ export const LETTER_ID_VALIDATION_MESSAGE =
 export const DEFAULT_LETTER_ID_PREFIX = "YBIT/CulturalDept/YF/V/";
 
 const MAX_LETTER_ID_LENGTH = 64;
-const LETTER_ID_PATTERN = /^ybit\/culturaldept\/yf\/v\/(\d{3})$/i;
+const MAX_CERTIFICATE_ID_PART_LENGTH = 12;
+const LETTER_ID_PATTERN = /^ybit\/culturaldept\/yf\/v\/([a-z0-9]{3,12})$/i;
 
 export type LetterIdValidationResult =
   | {
@@ -22,6 +23,16 @@ function escapeRegExp(value: string) {
 
 export function buildCertificateId(prefix: string, idPart: string) {
   return `${prefix}${idPart}`;
+}
+
+export function certificateIdPartMaxLength(digits: number, example: string) {
+  const exampleLength = example.trim().length;
+
+  return Math.max(
+    MAX_CERTIFICATE_ID_PART_LENGTH,
+    Number.isInteger(digits) && digits > 0 ? digits : 0,
+    exampleLength,
+  );
 }
 
 export function validateAndNormalizeCertificateIdPart(
@@ -45,8 +56,9 @@ export function validateAndNormalizeCertificateIdPart(
     };
   }
 
-  const trimmed = input.trim();
-  const pattern = new RegExp(`^\\d{1,${options.digits}}$`);
+  const trimmed = input.trim().toUpperCase();
+  const maxLength = certificateIdPartMaxLength(options.digits, options.example);
+  const pattern = new RegExp(`^[A-Z0-9]{1,${maxLength}}$`);
 
   if (!pattern.test(trimmed)) {
     return {
@@ -57,7 +69,12 @@ export function validateAndNormalizeCertificateIdPart(
 
   return {
     ok: true,
-    value: buildCertificateId(options.prefix, trimmed.padStart(options.digits, "0")),
+    value: buildCertificateId(
+      options.prefix,
+      /^\d+$/.test(trimmed) && trimmed.length < options.digits
+        ? trimmed.padStart(options.digits, "0")
+        : trimmed,
+    ),
   };
 }
 
@@ -99,7 +116,13 @@ export function validateAndNormalizeLetterId(
   const match =
     options?.prefix || options?.digits || options?.example
       ? trimmed.match(
-          new RegExp(`^${escapeRegExp(prefix)}(\\d{${digits}})$`, "i"),
+          new RegExp(
+            `^${escapeRegExp(prefix)}([a-z0-9]{1,${certificateIdPartMaxLength(
+              digits,
+              example,
+            )}})$`,
+            "i",
+          ),
         )
       : trimmed.match(LETTER_ID_PATTERN);
 
@@ -115,6 +138,6 @@ export function validateAndNormalizeLetterId(
 
   return {
     ok: true,
-    value: buildCertificateId(prefix, match[1]),
+    value: buildCertificateId(prefix, match[1].toUpperCase()),
   };
 }

@@ -20,9 +20,9 @@ describe("validateAndNormalizeLetterId", () => {
   });
 
   it("normalizes lowercase input", () => {
-    expect(validateAndNormalizeLetterId("ybit/culturaldept/yf/v/003")).toEqual({
+    expect(validateAndNormalizeLetterId("ybit/culturaldept/yf/v/1h502")).toEqual({
       ok: true,
-      value: "YBIT/CulturalDept/YF/V/003",
+      value: "YBIT/CulturalDept/YF/V/1H502",
     });
   });
 
@@ -30,13 +30,13 @@ describe("validateAndNormalizeLetterId", () => {
     expect(validateAndNormalizeLetterId("CulturalDept/YF/V/001").ok).toBe(false);
   });
 
-  it("rejects IDs without three final digits", () => {
+  it("rejects IDs outside the accepted final ID length", () => {
     expect(validateAndNormalizeLetterId("YBIT/CulturalDept/YF/V/01").ok).toBe(false);
-    expect(validateAndNormalizeLetterId("YBIT/CulturalDept/YF/V/0001").ok).toBe(false);
+    expect(validateAndNormalizeLetterId("YBIT/CulturalDept/YF/V/1234567890123").ok).toBe(false);
   });
 
   it("rejects invalid characters", () => {
-    expect(validateAndNormalizeLetterId("YBIT/CulturalDept/YF/V/0A1").ok).toBe(false);
+    expect(validateAndNormalizeLetterId("YBIT/CulturalDept/YF/V/0A-1").ok).toBe(false);
   });
 
   it("rejects excessively long input", () => {
@@ -73,13 +73,16 @@ describe("validateAndNormalizeCertificateIdPart", () => {
     });
   });
 
-  it("rejects letters in short IDs", () => {
+  it("accepts randomized alphanumeric IDs", () => {
     expect(
-      validateAndNormalizeCertificateIdPart("0A1", {
+      validateAndNormalizeCertificateIdPart("1h502", {
         prefix: "YBIT/CulturalDept/YF/V/",
         digits: 3,
         example: "001",
-      }).ok,
-    ).toBe(false);
+      }),
+    ).toEqual({
+      ok: true,
+      value: "YBIT/CulturalDept/YF/V/1H502",
+    });
   });
 });

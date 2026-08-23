@@ -3,7 +3,10 @@
 import { FormEvent, useState } from "react";
 import VerificationCertificate from "@/components/VerificationCertificate";
 import type { CertificateEvent } from "@/lib/certificateEvents";
-import { validateAndNormalizeCertificateIdPart } from "@/lib/letterId";
+import {
+  certificateIdPartMaxLength,
+  validateAndNormalizeCertificateIdPart,
+} from "@/lib/letterId";
 import type { VerifyApiResponse } from "@/lib/types";
 
 type RequestState = "idle" | "loading" | "complete" | "error";
@@ -68,6 +71,10 @@ export default function CertificateVerificationForm({
 
   const isLoading = requestState === "loading";
   const showMessage = message.length > 0;
+  const maxIdPartLength = certificateIdPartMaxLength(
+    event.certificateIdDigits,
+    event.certificateIdExample,
+  );
 
   return (
     <section className="verification-workspace" aria-label={`${event.eventName} certificate lookup`}>
@@ -82,19 +89,22 @@ export default function CertificateVerificationForm({
               id="letter-id"
               name="idPart"
               type="text"
-              inputMode="numeric"
+              inputMode="text"
               autoComplete="off"
+              autoCapitalize="characters"
               spellCheck={false}
               value={idPart}
               placeholder={event.certificateIdExample}
               aria-describedby={showMessage ? "verification-message" : "id-prefix-help"}
               aria-invalid={requestState === "error" ? "true" : "false"}
-              maxLength={event.certificateIdDigits}
-              onChange={(changeEvent) => setIdPart(changeEvent.target.value)}
+              maxLength={maxIdPartLength}
+              onChange={(changeEvent) =>
+                setIdPart(changeEvent.target.value.toUpperCase())
+              }
             />
           </div>
           <p id="id-prefix-help" className="field-help">
-            {event.certificateIdPrefix} is fixed. Enter only the final ID number.
+            {event.certificateIdPrefix} is fixed. Enter only the final ID.
           </p>
         </div>
 

@@ -232,6 +232,24 @@ input:focus-visible {
   padding-bottom: 18px;
 }
 
+.download-verify-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 22px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.download-verify-link:hover {
+  background: var(--accent-deep);
+}
+
 .download-cooldown-note {
   margin-top: 8px;
   color: var(--ink-muted);

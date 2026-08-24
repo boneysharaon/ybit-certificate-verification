@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import InstitutionalHeader from "@/components/InstitutionalHeader";
 import downloads from "@/lib/youthFestivalDownloads.json";
 
@@ -18,7 +19,12 @@ export default function YouthFestivalDownloadsPage() {
       <section className="verification-intro download-intro" aria-labelledby="page-title">
         <p className="section-kicker">Youth Festival 2026</p>
         <h1 id="page-title">Volunteer eCertificate Downloads</h1>
-        <p>{downloads.length} individual eCertificates are available below.</p>
+        <Link
+          className="download-verify-link"
+          href="/certificates/youth-festival-2026-volunteer-ecertificates"
+        >
+          Verify here
+        </Link>
         <p className="download-cooldown-note">
           After downloading one eCertificate, please wait 10 minutes before downloading another.
         </p>
